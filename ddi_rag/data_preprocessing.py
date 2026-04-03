@@ -2,8 +2,11 @@
 data_preprocessing.py — Load and clean the openFDA DDI dataset.
 
 Usage:
-    from data_preprocessing import load_and_clean_data
+    from data_preprocessing import load_and_clean_data, clean_text
     df = load_and_clean_data("./data/clean_ddi_dataset.csv")
+
+    # Clean a single text value (used by fda_sync.py for live API data):
+    cleaned = clean_text("Drug Interactions: [1.1] warfarin • interacts...")
 """
 
 import re
@@ -18,7 +21,12 @@ _BULLET_CODEPOINTS = [
     "\u00b7", "\u204c", "\u204d", "\u25aa", "\u25ab",
     "\u25cf", "\u25cb",
 ]
-_BULLET_PATTERN = "[" + "".join(_BULLET_CODEPOINTS) + "]"
+_BULLET_PATTERN = re.compile("[" + "".join(_BULLET_CODEPOINTS) + "]")
+
+_BRACKETS_RE   = re.compile(r"[\[\]]")
+_SECTION_NUM_RE = re.compile(r"\b\d+(\.\d+)?\b")
+_EMPTY_PAREN_RE = re.compile(r"\(\s*\)")
+_WHITESPACE_RE  = re.compile(r"\s+")
 
 # ── Text columns we care about ────────────────────────────────────────────────
 TEXT_COLS = [
@@ -34,6 +42,42 @@ TEXT_COLS = [
 ]
 
 
+def clean_text(text: str, col_name: str = "") -> str:
+    """
+    Apply the same cleaning pipeline used on the CSV dataset to a single
+    text string. Used by fda_sync.py so live API data matches the format
+    of the existing ChromaDB index.
+
+    Steps:
+        1. Lowercase
+        2. Remove brackets [ ]
+        3. Strip standalone section numbers (1, 1.1, etc.)
+        4. Remove empty parentheses ()
+        5. Normalise whitespace
+        6. Strip column-name prefix if present at start of value
+        7. Remove bullet unicode characters
+    """
+    if not text or not isinstance(text, str):
+        return ""
+
+    text = text.lower()
+    text = _BRACKETS_RE.sub("", text)
+    text = _SECTION_NUM_RE.sub("", text)
+    text = _EMPTY_PAREN_RE.sub("", text)
+    text = _WHITESPACE_RE.sub(" ", text).strip()
+
+    # Strip leading column-name prefix (e.g. "drug interactions " at start)
+    if col_name:
+        col_clean = col_name.replace("_", " ")
+        prefix_re = re.compile(rf"^\s*'?\s*{re.escape(col_clean)}\s+", re.IGNORECASE)
+        text = prefix_re.sub("", text).strip()
+
+    text = _BULLET_PATTERN.sub(" ", text)
+    text = _WHITESPACE_RE.sub(" ", text).strip()
+
+    return text
+
+
 def load_and_clean_data(csv_path: str) -> pd.DataFrame:
     """
     Load the clean_ddi_dataset CSV, apply all text normalization steps,
@@ -42,40 +86,13 @@ def load_and_clean_data(csv_path: str) -> pd.DataFrame:
     df = pd.read_csv(csv_path)
     print(f"Loaded dataset — shape: {df.shape}")
 
-    # ── Lowercase all string columns ──────────────────────────────────────────
-    df = df.apply(lambda col: col.str.lower() if col.dtype == "object" else col)
+    obj_cols = df.select_dtypes(include="object").columns.tolist()
 
-    # ── Select available text columns ─────────────────────────────────────────
-    text_cols = [c for c in TEXT_COLS if c in df.columns]
-    obj_cols  = df.select_dtypes(include="object").columns.tolist()
-
-    # ── Remove brackets, standalone section numbers, empty parentheses ────────
-    df[obj_cols] = df[obj_cols].replace(r"[\[\]]", "", regex=True)
-    df[obj_cols] = df[obj_cols].replace(r"\b\d+(\.\d+)?\b", "", regex=True)
-    df[obj_cols] = df[obj_cols].replace(r"\(\s*\)", "", regex=True)
-    df[obj_cols] = (
-        df[obj_cols]
-        .replace(r"\s+", " ", regex=True)
-        .apply(lambda col: col.str.strip())
-    )
-
-    # ── Strip column-name prefixes from cell values ───────────────────────────
+    # ── Apply clean_text() to every string cell ───────────────────────────────
     for col in obj_cols:
-        col_clean = col.replace("_", " ")
-        pattern   = rf"^\s*'?\s*{col_clean}\s+"
-        df[col]   = (
-            df[col]
-            .str.replace(pattern, "", regex=True, case=False)
-            .str.strip()
+        df[col] = df[col].apply(
+            lambda val: clean_text(str(val), col_name=col) if pd.notna(val) else val
         )
-
-    # ── Remove bullet characters ──────────────────────────────────────────────
-    df[obj_cols] = df[obj_cols].replace(_BULLET_PATTERN, " ", regex=True)
-    df[obj_cols] = (
-        df[obj_cols]
-        .replace(r"\s+", " ", regex=True)
-        .apply(lambda col: col.str.strip())
-    )
 
     # ── Derive final_generic_name via regex over all text columns ─────────────
     if "openfda_generic_name" in df.columns:

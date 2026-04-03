@@ -23,6 +23,7 @@ from config import (
     CHROMA_DIR, COLLECTION_NAME, EMBED_BATCH_SIZE,
     OPENFDA_BASE_URL, OPENFDA_PAGE_SIZE, SYNC_HOUR, TEXT_COLS,
 )
+from data_preprocessing import clean_text
 from rag_pipeline import _chunk_text, _get_collection, safe_str
 
 log = logging.getLogger("ddi.sync")
@@ -93,24 +94,29 @@ def _parse_label(record: dict) -> Optional[dict]:
     product_types = openfda.get("product_type", [])
     routes        = openfda.get("route",        [])
 
-    generic_name = generic_names[0].lower().strip() if generic_names else ""
-    brand_name   = brand_names[0].lower().strip()   if brand_names   else generic_name
-    product_type = product_types[0].lower().strip() if product_types else ""
-    route        = routes[0].lower().strip()        if routes        else ""
+    generic_name = clean_text(generic_names[0], "openfda_generic_name") if generic_names else ""
+    brand_name   = clean_text(brand_names[0],   "openfda_brand_name")   if brand_names   else generic_name
+    product_type = clean_text(product_types[0], "openfda_product_type") if product_types else ""
+    route        = clean_text(routes[0],        "openfda_route")        if routes        else ""
 
     if not generic_name:
         return None
 
     row = {
         "final_generic_name":   generic_name,
-        "openfda_brand_name":   brand_name,
+        "openfda_brand_name":   brand_name or generic_name,
         "openfda_product_type": product_type,
         "openfda_route":        route,
     }
 
     for col in TEXT_COLS:
-        values = record.get(col, [])
-        row[col] = " ".join(values).strip() if values else ""
+        values   = record.get(col, [])
+        raw_text = " ".join(values).strip() if values else ""
+        row[col] = clean_text(raw_text, col_name=col)
+
+    # Fill missing warnings to match CSV behaviour
+    if not row.get("warnings"):
+        row["warnings"] = "no warning from <fda data>"
 
     # Only keep records that have at least one useful text section
     if not any(row.get(c, "") for c in TEXT_COLS):
