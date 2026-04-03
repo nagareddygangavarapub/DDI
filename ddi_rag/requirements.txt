@@ -1,0 +1,42 @@
+# Core data
+pandas
+numpy
+scikit-learn
+
+# Vector store + embeddings
+chromadb
+sentence-transformers
+
+# HuggingFace Inference API (replaces local BioGPT)
+huggingface_hub
+requests
+
+# Flask API
+flask
+flask-cors
+flask-jwt-extended
+
+# Auth
+bcrypt
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# Scheduler (nightly FDA sync)
+apscheduler
+
+# Environment
+python-dotenv
+
+# Visualization (EDA notebooks)
+matplotlib
+seaborn
+
+# Misc NLP utils
+sacremoses
+
+# Optional: GPU acceleration (comment out if not needed)
+# torch
+# accelerate
+# transformers
