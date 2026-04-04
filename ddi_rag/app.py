@@ -470,7 +470,7 @@ FULL_HTML = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>DDI — Drug Interaction Checker</title>
+  <title>DrugSafe AI — FDA-Powered Drug Interaction Checker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
@@ -640,7 +640,7 @@ FULL_HTML = """<!DOCTYPE html>
 
   <!-- Nav -->
   <nav class="nav">
-    <div class="nav-brand">DDI <em>Checker</em></div>
+    <div class="nav-brand">DrugSafe <em>AI</em></div>
     <div class="nav-right">
       <span class="nav-user" id="navUser"></span>
       <button class="btn btn-outline btn-sm" id="authBtn" onclick="openAuth()">Sign In</button>
@@ -657,8 +657,8 @@ FULL_HTML = """<!DOCTYPE html>
 
   <!-- ── QUERY SECTION ───────────────────────────────── -->
   <div class="section active" id="querySection">
-    <div class="page-title">Drug <em>Interaction</em> Checker</div>
-    <p class="page-sub">// ChromaDB &nbsp;&middot;&nbsp; BioMistral-7B &nbsp;&middot;&nbsp; FDA Label Data</p>
+    <div class="page-title">DrugSafe <em>AI</em></div>
+    <p class="page-sub">// ChromaDB &nbsp;&middot;&nbsp; Llama 3.1 &nbsp;&middot;&nbsp; FDA Label Data</p>
 
     <div class="card">
       <div class="card-accent"></div>
@@ -749,7 +749,7 @@ FULL_HTML = """<!DOCTYPE html>
   </div>
 
   <footer class="footer">
-    <span>DDI CHECKER &middot; FDA LABEL DATA</span>
+    <span>DRUGSAFE AI &middot; FDA LABEL DATA</span>
     <span>FOR EDUCATIONAL USE ONLY &mdash; NOT MEDICAL ADVICE</span>
   </footer>
 </div>

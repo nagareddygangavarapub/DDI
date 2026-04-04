@@ -60,12 +60,12 @@ def load_models() -> None:
                      torch.cuda.get_device_properties(0).total_memory / 1e9)
         log.info("Embedding model ready.")
 
-    if HF_API_TOKEN:
-        log.info("HF Inference API configured — model: %s", HF_MODEL)
+    if GROQ_API_KEY:
+        log.info("Groq API configured — model: %s", GROQ_MODEL)
     else:
         log.warning(
-            "HF_API_TOKEN not set. Generation will return a placeholder response. "
-            "Add HF_API_TOKEN to your .env file."
+            "GROQ_API_KEY not set. Generation will return a placeholder. "
+            "Sign up at console.groq.com and add GROQ_API_KEY to your .env file."
         )
 
 
@@ -333,7 +333,7 @@ def _call_groq_api(prompt: str) -> str:
 
 # ── Full RAG pipeline ─────────────────────────────────────────────────────────
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=512)
 def _cached_answer(
     drug_name      : Optional[str],
     section        : Optional[str],
@@ -351,22 +351,22 @@ def _cached_answer(
     if retrieved.empty:
         return {"answer": "No relevant FDA label evidence found for this drug.", "sources": []}
 
-    context = "\n\n".join(
-        f"[Source {i}]\nDrug: {row['generic_name']}\n"
-        f"Section: {row['section']}\nScore: {row['score']}\n\n{row['text']}"
-        for i, (_, row) in enumerate(retrieved.iterrows(), 1)
+    # Limit to top 3 chunks, 300 chars each — keeps prompt small = faster response
+    context = "\n".join(
+        f"[{i}] {row['section'].replace('_',' ').title()}: {row['text'][:300]}"
+        for i, (_, row) in enumerate(retrieved.head(3).iterrows(), 1)
     )
 
     history_block = (
-        f"\nPATIENT MEDICATION HISTORY:\n{history_context}\n"
+        f"Patient history: {history_context}\n"
         if history_context else ""
     )
 
     full_prompt = (
-        f"<s>[INST] {SYSTEM_PROMPT}\n"
-        f"{history_block}\n"
-        f"FDA Label Context:\n{context}\n\n"
-        f"Question: {query} [/INST]"
+        f"{SYSTEM_PROMPT}\n"
+        f"{history_block}"
+        f"FDA Evidence:\n{context}\n\n"
+        f"Q: {query}\nA:"
     )
 
     answer = _call_groq_api(full_prompt)
