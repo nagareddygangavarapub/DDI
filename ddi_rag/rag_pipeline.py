@@ -52,8 +52,12 @@ def load_models() -> None:
     global _embedding_model
 
     if _embedding_model is None:
-        log.info("Loading embedding model: %s", EMBEDDING_MODEL)
-        _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        log.info("Loading embedding model: %s on %s", EMBEDDING_MODEL, device.upper())
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL, device=device)
+        if device == "cuda":
+            log.info("GPU: %s (%.1f GB VRAM)", torch.cuda.get_device_name(0),
+                     torch.cuda.get_device_properties(0).total_memory / 1e9)
         log.info("Embedding model ready.")
 
     if HF_API_TOKEN:
@@ -230,25 +234,31 @@ def retrieve_chunks(
         elif len(clauses) > 1:
             where = {"$and": clauses}
 
-        if where:
-            available = len(collection.get(where=where, limit=9_999)["ids"])
-        else:
-            available = collection.count()
-
-        if available == 0:
+        total = collection.count()
+        if total == 0:
             return pd.DataFrame()
 
-        safe_k    = min(top_k, available)
+        # Cap top_k to total available — avoids ChromaDB crash
+        safe_k    = min(top_k, total)
         query_emb = _embedding_model.encode(
             [query], convert_to_numpy=True, normalize_embeddings=True
         ).tolist()
 
-        results = collection.query(
-            query_embeddings = query_emb,
-            n_results        = safe_k,
-            where            = where,
-            include          = ["documents", "metadatas", "distances"],
-        )
+        # Try with filters first; if ChromaDB raises (fewer docs than k), retry
+        for attempt_k in [safe_k, max(1, safe_k // 2), 1]:
+            try:
+                results = collection.query(
+                    query_embeddings = query_emb,
+                    n_results        = attempt_k,
+                    where            = where,
+                    include          = ["documents", "metadatas", "distances"],
+                )
+                break
+            except Exception as e:
+                if "Number of requested results" in str(e) and attempt_k > 1:
+                    log.warning("Reducing n_results to %d due to: %s", attempt_k // 2, e)
+                    continue
+                raise
 
         records = [
             {

@@ -17,7 +17,7 @@ COLLECTION_NAME  = "fda_drug_labels"
 EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
 CHUNK_SIZE       = 120   # words per chunk
 CHUNK_OVERLAP    = 30    # word overlap between consecutive chunks
-EMBED_BATCH_SIZE = 512
+EMBED_BATCH_SIZE = 1024  # larger batch = faster on GPU (GTX 1650 has 4GB VRAM)
 
 # ── HuggingFace Inference API (BioMistral-7B) ─────────────────────────────────
 HF_API_TOKEN       = os.getenv("HF_API_TOKEN", "")

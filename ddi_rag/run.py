@@ -111,21 +111,23 @@ Thread(target=_run_flask, daemon=True).start()
 time.sleep(2)
 log.info("Flask listening on port %d.", PORT)
 
-# ── 10. Cloudflare tunnel ─────────────────────────────────────────────────────
-CF_BIN = "/usr/local/bin/cloudflared"
+# ── 10. Cloudflare tunnel (Linux/Mac only — skipped on Windows) ───────────────
+import platform
 
-if not os.path.exists(CF_BIN):
-    log.info("Downloading cloudflared ...")
-    subprocess.run(
-        [
-            "wget", "-q", "-O", CF_BIN,
-            "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64",
-        ],
-        check=True,
-    )
-    subprocess.run(["chmod", "+x", CF_BIN], check=True)
+def _run_cloudflared():
+    CF_BIN = "/usr/local/bin/cloudflared"
 
-try:
+    if not os.path.exists(CF_BIN):
+        log.info("Downloading cloudflared ...")
+        subprocess.run(
+            [
+                "wget", "-q", "-O", CF_BIN,
+                "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64",
+            ],
+            check=True,
+        )
+        subprocess.run(["chmod", "+x", CF_BIN], check=True)
+
     proc = subprocess.Popen(
         [CF_BIN, "tunnel", "--url", f"http://localhost:{PORT}"],
         stdout=subprocess.PIPE,
@@ -153,26 +155,32 @@ try:
         log.warning("Cloudflare tunnel did not start — app available locally.")
         print(f"\nFlask running at http://localhost:{PORT}\n")
 
-    # Keep main thread alive
-    try:
-        while True:
-            time.sleep(60)
-    except KeyboardInterrupt:
-        log.info("Shutting down.")
-        proc.terminate()
-        if _scheduler:
-            _scheduler.shutdown(wait=False)
-        sys.exit(0)
+    return proc
 
-except FileNotFoundError:
-    # cloudflared not available (Windows dev mode)
-    log.info("cloudflared not found — running locally only.")
-    print(f"\nFlask running at http://localhost:{PORT}\n")
+
+if platform.system() == "Windows":
+    # Cloudflared not supported on Windows dev — use localhost directly
+    print("\n" + "=" * 62)
+    print(f"  DDI Web App LIVE  :  http://localhost:{PORT}")
+    print(f"  API endpoint      :  http://localhost:{PORT}/api/query")
+    print("=" * 62 + "\n")
+    proc = None
+else:
     try:
-        while True:
-            time.sleep(60)
-    except KeyboardInterrupt:
-        log.info("Shutting down.")
-        if _scheduler:
-            _scheduler.shutdown(wait=False)
-        sys.exit(0)
+        proc = _run_cloudflared()
+    except Exception as exc:
+        log.warning("Cloudflare tunnel failed: %s — running locally.", exc)
+        print(f"\nFlask running at http://localhost:{PORT}\n")
+        proc = None
+
+# Keep main thread alive
+try:
+    while True:
+        time.sleep(60)
+except KeyboardInterrupt:
+    log.info("Shutting down.")
+    if proc:
+        proc.terminate()
+    if _scheduler:
+        _scheduler.shutdown(wait=False)
+    sys.exit(0)
