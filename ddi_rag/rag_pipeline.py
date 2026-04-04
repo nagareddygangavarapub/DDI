@@ -367,10 +367,10 @@ def _cached_answer(
     )
 
     full_prompt = (
-        f"{SYSTEM_PROMPT}\n"
+        f"<s>[INST] {SYSTEM_PROMPT}\n"
         f"{history_block}\n"
         f"FDA Label Context:\n{context}\n\n"
-        f"Question: {query}\n\nAnswer:"
+        f"Question: {query} [/INST]"
     )
 
     answer = _call_hf_api(full_prompt)

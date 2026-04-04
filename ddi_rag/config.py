@@ -21,7 +21,7 @@ EMBED_BATCH_SIZE = 1024  # larger batch = faster on GPU (GTX 1650 has 4GB VRAM)
 
 # ── HuggingFace Inference API (BioMistral-7B) ─────────────────────────────────
 HF_API_TOKEN       = os.getenv("HF_API_TOKEN", "")
-HF_MODEL           = os.getenv("HF_MODEL", "BioMistral/BioMistral-7B")
+HF_MODEL           = os.getenv("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.3")
 GENERATION_MAX_NEW = 280
 HF_TIMEOUT         = 60   # seconds
 
