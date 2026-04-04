@@ -23,7 +23,7 @@ from sentence_transformers import SentenceTransformer
 from config import (
     CHROMA_DIR, COLLECTION_NAME, CHUNK_OVERLAP, CHUNK_SIZE,
     DEFAULT_TOP_K, EMBED_BATCH_SIZE, EMBEDDING_MODEL,
-    GENERATION_MAX_NEW, HF_API_TOKEN, HF_MODEL, HF_TIMEOUT,
+    GENERATION_MAX_NEW, GROQ_API_KEY, GROQ_MODEL, GROQ_TIMEOUT,
     MAX_TOP_K, SYSTEM_PROMPT, TEXT_COLS,
 )
 
@@ -283,55 +283,51 @@ def retrieve_chunks(
         return pd.DataFrame()
 
 
-# ── HuggingFace Inference API generation ──────────────────────────────────────
+# ── Groq API generation ───────────────────────────────────────────────────────
 
-def _call_hf_api(prompt: str) -> str:
+def _call_groq_api(prompt: str) -> str:
     """
-    Send the prompt to BioMistral-7B via HuggingFace Inference API.
-    Returns the generated text string.
+    Send the prompt to Groq API (llama-3.1-8b-instant by default).
+    Fast, free tier, reliable. Returns the generated text string.
     """
-    if not HF_API_TOKEN:
+    if not GROQ_API_KEY:
         return (
-            "HF_API_TOKEN not configured. "
-            "Add your Hugging Face token to the .env file to enable generation."
+            "GROQ_API_KEY not configured. "
+            "Sign up at console.groq.com and add GROQ_API_KEY to your .env file."
         )
 
-    api_url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type":  "application/json",
+    }
     payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens":      GENERATION_MAX_NEW,
-            "do_sample":           True,
-            "temperature":         0.3,
-            "repetition_penalty":  1.15,
-            "return_full_text":    False,
-        },
+        "model": GROQ_MODEL,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens":   GENERATION_MAX_NEW,
+        "temperature":  0.3,
+        "stream":       False,
     }
 
     try:
         response = requests.post(
-            api_url, headers=headers, json=payload, timeout=HF_TIMEOUT
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=GROQ_TIMEOUT,
         )
         response.raise_for_status()
         data = response.json()
-
-        # HF returns a list: [{"generated_text": "..."}]
-        if isinstance(data, list) and data:
-            return safe_str(data[0].get("generated_text", "")).strip()
-
-        # Model loading (503) — HF cold start
-        if isinstance(data, dict) and "error" in data:
-            log.warning("HF API error: %s", data["error"])
-            return f"Model loading, please retry in ~20 seconds. ({data['error']})"
-
-        return "Unexpected response from HF API."
+        return safe_str(
+            data["choices"][0]["message"]["content"]
+        ).strip()
 
     except requests.Timeout:
-        log.error("HF API timed out after %ds", HF_TIMEOUT)
+        log.error("Groq API timed out after %ds", GROQ_TIMEOUT)
         return "Generation timed out. Please try again."
     except Exception as exc:
-        log.exception("HF API call failed")
+        log.exception("Groq API call failed")
         return f"Generation error: {safe_str(exc)}"
 
 
@@ -373,7 +369,7 @@ def _cached_answer(
         f"Question: {query} [/INST]"
     )
 
-    answer = _call_hf_api(full_prompt)
+    answer = _call_groq_api(full_prompt)
 
     return {
         "answer": answer,

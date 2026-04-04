@@ -19,11 +19,16 @@ CHUNK_SIZE       = 120   # words per chunk
 CHUNK_OVERLAP    = 30    # word overlap between consecutive chunks
 EMBED_BATCH_SIZE = 1024  # larger batch = faster on GPU (GTX 1650 has 4GB VRAM)
 
-# ── HuggingFace Inference API (BioMistral-7B) ─────────────────────────────────
+# ── HuggingFace Inference API (kept for reference) ────────────────────────────
 HF_API_TOKEN       = os.getenv("HF_API_TOKEN", "")
 HF_MODEL           = os.getenv("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.3")
-GENERATION_MAX_NEW = 280
-HF_TIMEOUT         = 60   # seconds
+HF_TIMEOUT         = 60
+
+# ── Groq API (primary generation) ─────────────────────────────────────────────
+GROQ_API_KEY       = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL         = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GENERATION_MAX_NEW = 512
+GROQ_TIMEOUT       = 30
 
 # ── Database (PostgreSQL) ─────────────────────────────────────────────────────
 DATABASE_URL = os.getenv("DATABASE_URL", "")
