@@ -2,7 +2,7 @@
 
 **MS Data Science Final Project | University of North Texas**
 
-A production-grade RAG (Retrieval-Augmented Generation) system that answers drug-drug interaction questions using FDA label data, ChromaDB vector search, and BioGPT-Large.
+A RAG (Retrieval-Augmented Generation) system that answers drug-drug interaction questions using FDA label data, ChromaDB vector search, and BioGPT-Large.
 
 ---
 
