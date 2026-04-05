@@ -54,26 +54,34 @@ _db_ok = _init_db()
 # RAG / MODEL LOADING
 # ══════════════════════════════════════════════════════════════════════════════
 
+# Use /tmp on Streamlit Cloud (source dir is read-only); local dev uses repo data dir
+_DATASETS_DIR = Path("/tmp/ddi_datasets")
+_FDA_CSV      = _DATASETS_DIR / "clean_ddi_dataset.csv"
+_DDI_CSV      = _DATASETS_DIR / "fully_processed_dataset.csv"
+_CHROMA_DIR   = Path("/tmp/ddi_chroma")
+
+_HF_FILES = {
+    "clean_ddi_dataset.csv":       "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/clean_ddi_dataset.csv",
+    "fully_processed_dataset.csv": "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/fully_processed_dataset.csv",
+}
+
+
 def _download_data():
-    """Download datasets from Hugging Face if not present locally."""
+    """Download datasets from Hugging Face into /tmp if not already present."""
     import requests
-    datasets_dir = _ROOT / "data" / "datasets"
-    datasets_dir.mkdir(parents=True, exist_ok=True)
-
-    files = {
-        "clean_ddi_dataset.csv":      "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/clean_ddi_dataset.csv",
-        "fully_processed_dataset.csv": "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/fully_processed_dataset.csv",
-    }
-
-    for filename, url in files.items():
-        dest = datasets_dir / filename
+    _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, url in _HF_FILES.items():
+        dest = _DATASETS_DIR / filename
         if not dest.exists():
             with st.spinner(f"Downloading {filename} from Hugging Face…"):
-                resp = requests.get(url, stream=True, timeout=300)
+                resp = requests.get(url, stream=True, timeout=600)
                 resp.raise_for_status()
                 with open(dest, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=8192):
+                    for chunk in resp.iter_content(chunk_size=65536):
                         f.write(chunk)
+
+
+_download_data()
 
 
 @st.cache_resource(show_spinner="Loading DrugSafe AI models…")
@@ -84,16 +92,15 @@ def _load_system():
     from rag_pipeline import build_chunk_df, build_chroma_index, load_models
     import chromadb
 
-    _download_data()
-
-    DATA_CSV   = str(_ROOT / "data" / "datasets" / "clean_ddi_dataset.csv")
-    CHROMA_DIR = str(_ROOT / "chroma_ddi_db")
+    DATA_CSV   = str(_FDA_CSV)
+    CHROMA_DIR = str(_CHROMA_DIR)
 
     df       = load_and_clean_data(DATA_CSV)
     df       = apply_route_column(df)
     df       = apply_product_type(df)
     chunk_df = build_chunk_df(df)
 
+    _CHROMA_DIR.mkdir(parents=True, exist_ok=True)
     client   = chromadb.PersistentClient(path=CHROMA_DIR)
     existing = [c.name for c in client.list_collections()]
     load_models()
