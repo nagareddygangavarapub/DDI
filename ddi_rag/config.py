@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-DATA_CSV   = os.getenv("DDI_DATA_CSV",   "./data/clean_ddi_dataset.csv")
+DATA_CSV   = os.getenv("DDI_DATA_CSV",   "../data/datasets/clean_ddi_dataset.csv")
 CHROMA_DIR = os.getenv("DDI_CHROMA_DIR", "./chroma_ddi_db")
 
 # ── ChromaDB ──────────────────────────────────────────────────────────────────
@@ -31,7 +31,10 @@ GENERATION_MAX_NEW = 512
 GROQ_TIMEOUT       = 30
 
 # ── Database (PostgreSQL) ─────────────────────────────────────────────────────
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+_DEFAULT_DB = "sqlite:///" + os.path.join(
+    os.path.dirname(__file__), "..", "drugsafe.db"
+).replace("\\", "/")
+DATABASE_URL = os.getenv("DATABASE_URL", _DEFAULT_DB)
 
 # ── Auth (JWT) ────────────────────────────────────────────────────────────────
 JWT_SECRET_KEY        = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
@@ -64,10 +67,20 @@ OPENFDA_BASE_URL  = "https://api.fda.gov/drug/label.json"
 OPENFDA_PAGE_SIZE = 100
 SYNC_HOUR         = 2   # run nightly at 2 AM
 
-# ── System prompt (used in rag_pipeline) ─────────────────────────────────────
+# ── System prompt — RAG mode (drug queries with FDA evidence) ─────────────────
 SYSTEM_PROMPT = (
-    "You are a clinical pharmacist specialising in drug-drug interactions. "
-    "Using ONLY the FDA label excerpts below, explain the interaction risks, "
+    "You are DrugSafe AI, a clinical pharmacist specialising in drug safety. "
+    "Using the FDA label excerpts provided, explain interaction risks, "
     "contraindications, and warnings. Be concise and clinically precise. "
-    "Do not invent facts!"
+    "Do not invent facts not present in the evidence."
+)
+
+# ── System prompt — General medical assistant mode (no drug detected) ─────────
+GENERAL_SYSTEM_PROMPT = (
+    "You are DrugSafe AI, a knowledgeable and compassionate medical assistant. "
+    "You help patients with general health questions, first aid guidance, medication advice, "
+    "pharmacy and healthcare navigation, and wellness information. "
+    "When relevant, reference any medications the patient is currently taking (provided in context). "
+    "Always recommend consulting a licensed healthcare professional for serious symptoms or diagnoses. "
+    "Be clear, friendly, and clinically accurate. Never invent drug facts or dosages."
 )

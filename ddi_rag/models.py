@@ -13,7 +13,6 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     JSON, Boolean, Column, Date, DateTime, ForeignKey, String, Text
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -32,7 +31,7 @@ def _now():
 class User(Base):
     __tablename__ = "users"
 
-    id         = Column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    id         = Column(String(36), primary_key=True, default=_uuid)
     email      = Column(String(255), unique=True, nullable=False, index=True)
     password   = Column(String(255), nullable=False)           # bcrypt hash
     full_name  = Column(String(255), nullable=False)
@@ -57,8 +56,8 @@ class User(Base):
 class Medication(Base):
     __tablename__ = "medications"
 
-    id         = Column(UUID(as_uuid=False), primary_key=True, default=_uuid)
-    user_id    = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False,
+    id         = Column(String(36), primary_key=True, default=_uuid)
+    user_id    = Column(String(36), ForeignKey("users.id"), nullable=False,
                         index=True)
 
     # Only drug_name is required; everything else is optional
@@ -92,8 +91,8 @@ class Medication(Base):
 class QueryHistory(Base):
     __tablename__ = "query_history"
 
-    id             = Column(UUID(as_uuid=False), primary_key=True, default=_uuid)
-    user_id        = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False,
+    id             = Column(String(36), primary_key=True, default=_uuid)
+    user_id        = Column(String(36), ForeignKey("users.id"), nullable=False,
                             index=True)
     prescription   = Column(Text, nullable=False)
     detected_drugs = Column(JSON, nullable=True)   # list of drug names

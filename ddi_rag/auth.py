@@ -9,6 +9,7 @@ Provides:
 """
 
 import logging
+from datetime import timedelta
 
 import bcrypt
 from flask_jwt_extended import JWTManager, get_jwt_identity
@@ -25,9 +26,7 @@ _jwt = JWTManager()
 def init_jwt(app):
     """Attach JWTManager to the Flask app."""
     app.config["JWT_SECRET_KEY"]              = JWT_SECRET_KEY
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"]    = __import__("datetime").timedelta(
-        minutes=JWT_ACCESS_TOKEN_MINS
-    )
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"]    = timedelta(minutes=JWT_ACCESS_TOKEN_MINS)
     _jwt.init_app(app)
     log.info("JWT initialised (token TTL: %d min).", JWT_ACCESS_TOKEN_MINS)
 

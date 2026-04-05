@@ -34,14 +34,16 @@ def _get_engine():
     if _engine is None:
         if not DATABASE_URL:
             raise RuntimeError("DATABASE_URL is not set in your .env file.")
-        _engine = create_engine(
-            DATABASE_URL,
-            pool_pre_ping=True,       # reconnect on stale connections
-            pool_size=5,
-            max_overflow=10,
-            connect_args={"connect_timeout": 10},
-        )
-        log.info("Database engine created.")
+        is_sqlite = DATABASE_URL.startswith("sqlite")
+        kwargs = {"pool_pre_ping": not is_sqlite}
+        if not is_sqlite:
+            kwargs.update({
+                "pool_size": 5,
+                "max_overflow": 10,
+                "connect_args": {"connect_timeout": 10},
+            })
+        _engine = create_engine(DATABASE_URL, **kwargs)
+        log.info("Database engine created (%s).", "SQLite" if is_sqlite else "PostgreSQL")
     return _engine
 
 

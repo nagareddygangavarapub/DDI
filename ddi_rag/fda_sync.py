@@ -38,7 +38,8 @@ def _load_last_sync_date() -> Optional[str]:
     """Return the last sync date as 'YYYYMMDD' string, or None."""
     try:
         if os.path.exists(_SYNC_STATE_FILE):
-            return open(_SYNC_STATE_FILE).read().strip() or None
+            with open(_SYNC_STATE_FILE) as f:
+                return f.read().strip() or None
     except Exception:
         pass
     return None

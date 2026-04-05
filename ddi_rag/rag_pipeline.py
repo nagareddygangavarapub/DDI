@@ -23,7 +23,7 @@ from sentence_transformers import SentenceTransformer
 from config import (
     CHROMA_DIR, COLLECTION_NAME, CHUNK_OVERLAP, CHUNK_SIZE,
     DEFAULT_TOP_K, EMBED_BATCH_SIZE, EMBEDDING_MODEL,
-    GENERATION_MAX_NEW, GROQ_API_KEY, GROQ_MODEL, GROQ_TIMEOUT,
+    GENERAL_SYSTEM_PROMPT, GENERATION_MAX_NEW, GROQ_API_KEY, GROQ_MODEL, GROQ_TIMEOUT,
     MAX_TOP_K, SYSTEM_PROMPT, TEXT_COLS,
 )
 
@@ -158,7 +158,7 @@ def build_chroma_index(chunk_df: pd.DataFrame, rebuild: bool = False) -> None:
     Encode all chunks and upsert them into the ChromaDB collection.
     """
     if _embedding_model is None:
-        raise RuntimeError("Call load_models() before build_chroma_index().")
+        load_models()
 
     client = chromadb.PersistentClient(path=CHROMA_DIR)
 
@@ -285,10 +285,14 @@ def retrieve_chunks(
 
 # ── Groq API generation ───────────────────────────────────────────────────────
 
-def _call_groq_api(prompt: str) -> str:
+def _call_groq_api(
+    messages: list,
+    temperature: float = 0.4,
+    max_tokens: int = None,
+) -> str:
     """
-    Send the prompt to Groq API (llama-3.1-8b-instant by default).
-    Fast, free tier, reliable. Returns the generated text string.
+    Send a messages list to Groq API.
+    Each message is {"role": "system"|"user"|"assistant", "content": str}.
     """
     if not GROQ_API_KEY:
         return (
@@ -301,27 +305,23 @@ def _call_groq_api(prompt: str) -> str:
         "Content-Type":  "application/json",
     }
     payload = {
-        "model": GROQ_MODEL,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens":   GENERATION_MAX_NEW,
-        "temperature":  0.3,
-        "stream":       False,
+        "model":       GROQ_MODEL,
+        "messages":    messages,
+        "max_tokens":  max_tokens or GENERATION_MAX_NEW,
+        "temperature": temperature,
+        "stream":      False,
     }
 
     try:
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=GROQ_TIMEOUT,
+            headers = headers,
+            json    = payload,
+            timeout = GROQ_TIMEOUT,
         )
         response.raise_for_status()
         data = response.json()
-        return safe_str(
-            data["choices"][0]["message"]["content"]
-        ).strip()
+        return safe_str(data["choices"][0]["message"]["content"]).strip()
 
     except requests.Timeout:
         log.error("Groq API timed out after %ds", GROQ_TIMEOUT)
@@ -329,6 +329,32 @@ def _call_groq_api(prompt: str) -> str:
     except Exception as exc:
         log.exception("Groq API call failed")
         return f"Generation error: {safe_str(exc)}"
+
+
+@lru_cache(maxsize=256)
+def answer_general(
+    query          : str,
+    history_context: str = "",
+) -> Dict:
+    """
+    General medical assistant mode — no RAG retrieval.
+    Sends the query directly to Groq with the medical assistant system prompt.
+    Injects the user's current medication list when available.
+
+    Returns {"answer": str, "sources": []}
+    """
+    med_block = (
+        f"\nPatient's current medications:\n{history_context}\n"
+        if history_context else ""
+    )
+
+    messages = [
+        {"role": "system",  "content": GENERAL_SYSTEM_PROMPT},
+        {"role": "user",    "content": f"{med_block}\nQuestion: {query}"},
+    ]
+
+    answer = _call_groq_api(messages, temperature=0.5, max_tokens=600)
+    return {"answer": answer, "sources": []}
 
 
 # ── Full RAG pipeline ─────────────────────────────────────────────────────────
@@ -357,19 +383,23 @@ def _cached_answer(
         for i, (_, row) in enumerate(retrieved.head(3).iterrows(), 1)
     )
 
-    history_block = (
-        f"Patient history: {history_context}\n"
+    med_block = (
+        f"Patient's current medications:\n{history_context}\n\n"
         if history_context else ""
     )
 
-    full_prompt = (
-        f"{SYSTEM_PROMPT}\n"
-        f"{history_block}"
+    user_content = (
+        f"{med_block}"
         f"FDA Evidence:\n{context}\n\n"
-        f"Q: {query}\nA:"
+        f"Q: {query}"
     )
 
-    answer = _call_groq_api(full_prompt)
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user",   "content": user_content},
+    ]
+
+    answer = _call_groq_api(messages)
 
     return {
         "answer": answer,
@@ -407,7 +437,7 @@ def answer_ddi(
         {"answer": str, "sources": list[dict]}
     """
     if _embedding_model is None:
-        raise RuntimeError("Call load_models() before answer_ddi().")
+        load_models()
 
     return _cached_answer(
         drug_name       = drug_name,

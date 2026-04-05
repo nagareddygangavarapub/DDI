@@ -24,9 +24,14 @@ data/raw/
 data/processed/
 chroma_ddi_db/
 *.sqlite3
+*.db
 *.bin
 *.pt
 *.safetensors
+clean_ddi_dataset.csv
+
+# Claude internal
+.claude/
 
 # Sync state
 ddi_rag/.last_sync_date

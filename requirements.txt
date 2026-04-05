@@ -32,6 +32,10 @@ mcp[cli]
 # Environment
 python-dotenv
 
+# Streamlit UI
+streamlit
+streamlit-js-eval
+
 # Visualization (EDA notebooks)
 matplotlib
 seaborn
