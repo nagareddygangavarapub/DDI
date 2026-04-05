@@ -54,6 +54,28 @@ _db_ok = _init_db()
 # RAG / MODEL LOADING
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _download_data():
+    """Download datasets from Hugging Face if not present locally."""
+    import requests
+    datasets_dir = _ROOT / "data" / "datasets"
+    datasets_dir.mkdir(parents=True, exist_ok=True)
+
+    files = {
+        "clean_ddi_dataset.csv":      "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/clean_ddi_dataset.csv",
+        "fully_processed_dataset.csv": "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/fully_processed_dataset.csv",
+    }
+
+    for filename, url in files.items():
+        dest = datasets_dir / filename
+        if not dest.exists():
+            with st.spinner(f"Downloading {filename} from Hugging Face…"):
+                resp = requests.get(url, stream=True, timeout=300)
+                resp.raise_for_status()
+                with open(dest, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        f.write(chunk)
+
+
 @st.cache_resource(show_spinner="Loading DrugSafe AI models…")
 def _load_system():
     from config import COLLECTION_NAME
@@ -61,6 +83,8 @@ def _load_system():
     from drug_categorization import apply_product_type, apply_route_column
     from rag_pipeline import build_chunk_df, build_chroma_index, load_models
     import chromadb
+
+    _download_data()
 
     DATA_CSV   = str(_ROOT / "data" / "datasets" / "clean_ddi_dataset.csv")
     CHROMA_DIR = str(_ROOT / "chroma_ddi_db")
