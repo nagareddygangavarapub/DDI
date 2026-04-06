@@ -11,6 +11,9 @@ torch
 # LLM generation (Groq API)
 requests
 
+# HuggingFace Hub (dataset download — handles XET storage)
+huggingface_hub
+
 # Flask API
 flask
 flask-cors
