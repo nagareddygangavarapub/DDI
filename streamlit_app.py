@@ -76,23 +76,24 @@ def _load_system():
     from rag_pipeline import build_chunk_df, build_chroma_index, load_models
     import chromadb
 
-    # ── Download datasets from Hugging Face using hf_hub_download ────────────
+    # ── Download datasets from Hugging Face ──────────────────────────────────
     _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
-    for filename in _HF_FILES:
-        dest = _DATASETS_DIR / filename
-        if not dest.exists():
-            print(f"[DrugSafe] Downloading {filename} from HuggingFace ({_HF_REPO})…")
-            try:
-                downloaded = hf_hub_download(
-                    repo_id   = _HF_REPO,
-                    filename  = filename,
-                    repo_type = "dataset",
-                    local_dir = str(_DATASETS_DIR),
-                )
-                print(f"[DrugSafe] Saved → {downloaded}")
-            except Exception as e:
-                st.error(f"❌ Failed to download {filename} from HuggingFace: {e}")
-                raise
+    missing = [f for f in _HF_FILES if not (_DATASETS_DIR / f).exists()]
+    if missing:
+        print(f"[DrugSafe] Downloading {missing} from HuggingFace ({_HF_REPO})…")
+        try:
+            from huggingface_hub import snapshot_download
+            snapshot_download(
+                repo_id        = _HF_REPO,
+                repo_type      = "dataset",
+                local_dir      = str(_DATASETS_DIR),
+                allow_patterns = _HF_FILES,
+                ignore_patterns= ["*.gitattributes", ".gitattributes"],
+            )
+            print(f"[DrugSafe] Download complete → {_DATASETS_DIR}")
+        except Exception as e:
+            st.error(f"❌ Failed to download datasets from HuggingFace: {e}")
+            raise
 
     DATA_CSV   = str(_FDA_CSV)
     CHROMA_DIR = str(_CHROMA_DIR)
