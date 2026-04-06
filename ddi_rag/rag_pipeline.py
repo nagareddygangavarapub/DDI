@@ -1,12 +1,12 @@
 """
-rag_pipeline.py — ChromaDB vector store + BioMistral-7B generation via HF Inference API.
+rag_pipeline.py — Qdrant Cloud vector store + Groq LLM generation.
 
 Public API:
     load_models()                          — loads embedding model once
     build_chunk_df(df)                     — slice DataFrame into overlapping word-window chunks
-    build_chroma_index(chunk_df)           — encode chunks and upsert into ChromaDB
-    retrieve_chunks(query, top_k, ...)     — cosine-similarity retrieval with safe k-capping
+    retrieve_chunks(query, top_k, ...)     — cosine-similarity retrieval via Qdrant Cloud
     answer_ddi(drug_name, section, top_k, history_context)  — full RAG pipeline
+    answer_general(query, history_context) — general medical assistant (no retrieval)
 """
 
 import logging
@@ -17,21 +17,22 @@ from typing import Dict, List, Optional
 import pandas as pd
 import requests
 import torch
-import chromadb
 from sentence_transformers import SentenceTransformer
+from qdrant_client import QdrantClient
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 from config import (
-    CHROMA_DIR, COLLECTION_NAME, CHUNK_OVERLAP, CHUNK_SIZE,
+    COLLECTION_NAME, CHUNK_OVERLAP, CHUNK_SIZE,
     DEFAULT_TOP_K, EMBED_BATCH_SIZE, EMBEDDING_MODEL,
     GENERAL_SYSTEM_PROMPT, GENERATION_MAX_NEW, GROQ_API_KEY, GROQ_MODEL, GROQ_TIMEOUT,
-    MAX_TOP_K, SYSTEM_PROMPT, TEXT_COLS,
+    MAX_TOP_K, QDRANT_API_KEY, QDRANT_URL, SYSTEM_PROMPT, TEXT_COLS,
 )
 
 log = logging.getLogger("ddi.rag")
 
 # ── Module-level singletons ───────────────────────────────────────────────────
 _embedding_model: Optional[SentenceTransformer] = None
-_chroma_collection = None
+_qdrant_client:   Optional[QdrantClient]        = None
 
 # Control-character stripper
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -44,62 +45,38 @@ def safe_str(val) -> str:
 # ── Model loading ─────────────────────────────────────────────────────────────
 
 def load_models() -> None:
-    """
-    Load the SentenceTransformer embedding model into memory.
-    BioMistral generation is handled via HF Inference API — no local model needed.
-    Call once at startup; subsequent calls are no-ops.
-    """
+    """Load the SentenceTransformer embedding model. Call once at startup."""
     global _embedding_model
 
     if _embedding_model is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         log.info("Loading embedding model: %s on %s", EMBEDDING_MODEL, device.upper())
         _embedding_model = SentenceTransformer(EMBEDDING_MODEL, device=device)
-        if device == "cuda":
-            log.info("GPU: %s (%.1f GB VRAM)", torch.cuda.get_device_name(0),
-                     torch.cuda.get_device_properties(0).total_memory / 1e9)
         log.info("Embedding model ready.")
 
     if GROQ_API_KEY:
         log.info("Groq API configured — model: %s", GROQ_MODEL)
     else:
-        log.warning(
-            "GROQ_API_KEY not set. Generation will return a placeholder. "
-            "Sign up at console.groq.com and add GROQ_API_KEY to your .env file."
-        )
+        log.warning("GROQ_API_KEY not set. Add it to your .env file.")
 
 
-def _get_collection():
-    """Return (and cache) the persistent ChromaDB collection handle."""
-    global _chroma_collection
-    if _chroma_collection is None:
-        client = chromadb.PersistentClient(path=CHROMA_DIR)
-        _chroma_collection = client.get_or_create_collection(
-            name=COLLECTION_NAME,
-            metadata={"hnsw:space": "cosine"},
-        )
-        log.info(
-            'ChromaDB collection "%s" opened (%d vectors).',
-            COLLECTION_NAME, _chroma_collection.count(),
-        )
-    return _chroma_collection
+def _get_qdrant() -> QdrantClient:
+    """Return (and cache) the Qdrant Cloud client."""
+    global _qdrant_client
+    if _qdrant_client is None:
+        if not QDRANT_API_KEY:
+            raise RuntimeError("QDRANT_API_KEY is not set. Add it to your .env / Streamlit secrets.")
+        _qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        try:
+            info = _qdrant_client.get_collection(COLLECTION_NAME)
+            log.info('Qdrant collection "%s" — %d vectors.', COLLECTION_NAME,
+                     info.points_count)
+        except Exception:
+            log.warning('Qdrant collection "%s" not found or not yet uploaded.', COLLECTION_NAME)
+    return _qdrant_client
 
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
-
-def _build_full_document(row: pd.Series, valid_cols: List[str]) -> str:
-    parts = [
-        f"Generic Name: {row.get('final_generic_name', '')}",
-        f"Brand Name: {row.get('openfda_brand_name', '')}",
-        f"Product Type: {row.get('openfda_product_type', '')}",
-        f"Route: {row.get('openfda_route', '')}",
-    ]
-    for col in valid_cols:
-        val = row.get(col, "")
-        if val and isinstance(val, str) and val.strip():
-            parts.append(f"{col.replace('_', ' ').title()}:\n{val}")
-    return "\n\n".join(parts)
-
 
 def _chunk_text(text: str) -> List[str]:
     """Split text into overlapping word-level windows."""
@@ -117,8 +94,7 @@ def _chunk_text(text: str) -> List[str]:
 def build_chunk_df(df: pd.DataFrame) -> pd.DataFrame:
     """
     Slice every FDA label in `df` into overlapping word-window chunks.
-    Returns a flat DataFrame with columns:
-        doc_id, generic_name, brand_name, product_type, route, section, text
+    Returns a flat DataFrame used for lookup table building.
     """
     valid_cols = [c for c in TEXT_COLS if c in df.columns]
     documents: List[Dict] = []
@@ -151,58 +127,6 @@ def build_chunk_df(df: pd.DataFrame) -> pd.DataFrame:
     return chunk_df
 
 
-# ── Index building ────────────────────────────────────────────────────────────
-
-def build_chroma_index(chunk_df: pd.DataFrame, rebuild: bool = False) -> None:
-    """
-    Encode all chunks and upsert them into the ChromaDB collection.
-    """
-    if _embedding_model is None:
-        load_models()
-
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
-
-    if rebuild:
-        try:
-            client.delete_collection(COLLECTION_NAME)
-            log.info("Existing collection deleted — rebuilding.")
-        except Exception:
-            pass
-
-    collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-    )
-
-    global _chroma_collection
-    _chroma_collection = collection
-
-    total = len(chunk_df)
-    log.info("Indexing %d chunks into ChromaDB ...", total)
-
-    for start in range(0, total, EMBED_BATCH_SIZE):
-        batch      = chunk_df.iloc[start : start + EMBED_BATCH_SIZE]
-        texts      = batch["text"].tolist()
-        embeddings = _embedding_model.encode(
-            texts,
-            show_progress_bar=False,
-            convert_to_numpy=True,
-            normalize_embeddings=True,
-        ).tolist()
-        collection.upsert(
-            ids        = batch["doc_id"].tolist(),
-            documents  = texts,
-            embeddings = embeddings,
-            metadatas  = batch[
-                ["generic_name", "brand_name", "product_type", "route", "section"]
-            ].to_dict(orient="records"),
-        )
-        if (start // EMBED_BATCH_SIZE) % 10 == 0:
-            log.info("  Upserted %d / %d", min(start + EMBED_BATCH_SIZE, total), total)
-
-    log.info("Index built. Total vectors: %d", collection.count())
-
-
 # ── Retrieval ─────────────────────────────────────────────────────────────────
 
 def retrieve_chunks(
@@ -212,69 +136,68 @@ def retrieve_chunks(
     section   : Optional[str] = None,
 ) -> pd.DataFrame:
     """
-    Query ChromaDB for the top-k most relevant chunks.
+    Query Qdrant Cloud for the top-k most relevant chunks.
     Returns a DataFrame with columns:
         generic_name, brand_name, product_type, route, section, text, score
     """
     if _embedding_model is None:
         raise RuntimeError("Call load_models() first.")
 
-    collection = _get_collection()
+    client = _get_qdrant()
 
     try:
-        clauses = []
+        # Build filter conditions
+        conditions = []
         if drug_name:
-            clauses.append({"generic_name": {"$eq": drug_name.strip().lower()}})
+            conditions.append(
+                FieldCondition(key="generic_name",
+                               match=MatchValue(value=drug_name.strip().lower()))
+            )
         if section:
-            clauses.append({"section": {"$eq": section.strip().lower()}})
+            conditions.append(
+                FieldCondition(key="section",
+                               match=MatchValue(value=section.strip().lower()))
+            )
 
-        where = None
-        if len(clauses) == 1:
-            where = clauses[0]
-        elif len(clauses) > 1:
-            where = {"$and": clauses}
+        query_filter = Filter(must=conditions) if conditions else None
 
-        total = collection.count()
-        if total == 0:
-            return pd.DataFrame()
-
-        # Cap top_k to total available — avoids ChromaDB crash
-        safe_k    = min(top_k, total)
         query_emb = _embedding_model.encode(
             [query], convert_to_numpy=True, normalize_embeddings=True
-        ).tolist()
+        ).tolist()[0]
 
-        # Try with filters first; if ChromaDB raises (fewer docs than k), retry
-        for attempt_k in [safe_k, max(1, safe_k // 2), 1]:
-            try:
-                results = collection.query(
-                    query_embeddings = query_emb,
-                    n_results        = attempt_k,
-                    where            = where,
-                    include          = ["documents", "metadatas", "distances"],
-                )
-                break
-            except Exception as e:
-                if "Number of requested results" in str(e) and attempt_k > 1:
-                    log.warning("Reducing n_results to %d due to: %s", attempt_k // 2, e)
-                    continue
-                raise
+        # Try with filter first; fall back to no filter if no results
+        results = client.search(
+            collection_name = COLLECTION_NAME,
+            query_vector    = query_emb,
+            query_filter    = query_filter,
+            limit           = min(top_k, MAX_TOP_K),
+            with_payload    = True,
+        )
+
+        # If filtered search returned nothing and drug_name was set, try globally
+        if not results and drug_name:
+            log.info('No filtered match for "%s", falling back to global search.', drug_name)
+            results = client.search(
+                collection_name = COLLECTION_NAME,
+                query_vector    = query_emb,
+                limit           = min(top_k, MAX_TOP_K),
+                with_payload    = True,
+            )
+
+        if not results:
+            return pd.DataFrame()
 
         records = [
             {
-                "generic_name": m.get("generic_name", ""),
-                "brand_name"  : m.get("brand_name",   ""),
-                "product_type": m.get("product_type", ""),
-                "route"       : m.get("route",        ""),
-                "section"     : m.get("section",      ""),
-                "text"        : doc,
-                "score"       : round(float(1 - dist), 4),
+                "generic_name": safe_str(r.payload.get("generic_name", "")),
+                "brand_name"  : safe_str(r.payload.get("brand_name",   "")),
+                "product_type": safe_str(r.payload.get("product_type", "")),
+                "route"       : safe_str(r.payload.get("route",        "")),
+                "section"     : safe_str(r.payload.get("section",      "")),
+                "text"        : safe_str(r.payload.get("text",         "")),
+                "score"       : round(float(r.score), 4),
             }
-            for doc, m, dist in zip(
-                results["documents"][0],
-                results["metadatas"][0],
-                results["distances"][0],
-            )
+            for r in results
         ]
         return pd.DataFrame(records)
 
@@ -290,14 +213,11 @@ def _call_groq_api(
     temperature: float = 0.4,
     max_tokens: int = None,
 ) -> str:
-    """
-    Send a messages list to Groq API.
-    Each message is {"role": "system"|"user"|"assistant", "content": str}.
-    """
+    """Send a messages list to Groq API and return the reply string."""
     if not GROQ_API_KEY:
         return (
             "GROQ_API_KEY not configured. "
-            "Sign up at console.groq.com and add GROQ_API_KEY to your .env file."
+            "Add GROQ_API_KEY to your .env file or Streamlit secrets."
         )
 
     headers = {
@@ -338,21 +258,16 @@ def answer_general(
 ) -> Dict:
     """
     General medical assistant mode — no RAG retrieval.
-    Sends the query directly to Groq with the medical assistant system prompt.
-    Injects the user's current medication list when available.
-
     Returns {"answer": str, "sources": []}
     """
     med_block = (
         f"\nPatient's current medications:\n{history_context}\n"
         if history_context else ""
     )
-
     messages = [
-        {"role": "system",  "content": GENERAL_SYSTEM_PROMPT},
-        {"role": "user",    "content": f"{med_block}\nQuestion: {query}"},
+        {"role": "system", "content": GENERAL_SYSTEM_PROMPT},
+        {"role": "user",   "content": f"{med_block}\nQuestion: {query}"},
     ]
-
     answer = _call_groq_api(messages, temperature=0.5, max_tokens=600)
     return {"answer": answer, "sources": []}
 
@@ -364,20 +279,16 @@ def _cached_answer(
     drug_name      : Optional[str],
     section        : Optional[str],
     top_k          : int,
-    history_context: str,          # empty string = no history
+    history_context: str,
 ) -> Dict:
     query     = f"What are the drug interactions and warnings for {drug_name}?"
     retrieved = retrieve_chunks(query=query, top_k=top_k,
                                 drug_name=drug_name, section=section)
 
-    if retrieved.empty and drug_name:
-        log.info('No exact match for "%s", falling back to global search.', drug_name)
-        retrieved = retrieve_chunks(query=query, top_k=top_k, section=section)
-
     if retrieved.empty:
         return {"answer": "No relevant FDA label evidence found for this drug.", "sources": []}
 
-    # Limit to top 3 chunks, 300 chars each — keeps prompt small = faster response
+    # Top 3 chunks, 300 chars each — keeps prompt small = faster response
     context = "\n".join(
         f"[{i}] {row['section'].replace('_',' ').title()}: {row['text'][:300]}"
         for i, (_, row) in enumerate(retrieved.head(3).iterrows(), 1)
@@ -388,15 +299,9 @@ def _cached_answer(
         if history_context else ""
     )
 
-    user_content = (
-        f"{med_block}"
-        f"FDA Evidence:\n{context}\n\n"
-        f"Q: {query}"
-    )
-
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user",   "content": user_content},
+        {"role": "user",   "content": f"{med_block}FDA Evidence:\n{context}\n\nQ: {query}"},
     ]
 
     answer = _call_groq_api(messages)
@@ -424,18 +329,7 @@ def answer_ddi(
     top_k          : int           = DEFAULT_TOP_K,
     history_context: str           = "",
 ) -> Dict:
-    """
-    Full RAG pipeline: retrieve → prompt (with optional patient history) → generate.
-
-    Args:
-        drug_name:       generic drug name to filter retrieval (optional)
-        section:         FDA section to filter on (default: drug_interactions)
-        top_k:           number of chunks to retrieve (capped at MAX_TOP_K)
-        history_context: formatted string of patient's past medications
-
-    Returns:
-        {"answer": str, "sources": list[dict]}
-    """
+    """Full RAG pipeline: retrieve → prompt → generate via Groq."""
     if _embedding_model is None:
         load_models()
 

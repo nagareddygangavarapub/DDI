@@ -14,6 +14,9 @@ requests
 # HuggingFace Hub
 huggingface_hub
 
+# Qdrant Cloud vector database
+qdrant-client
+
 # Flask API
 flask
 flask-cors

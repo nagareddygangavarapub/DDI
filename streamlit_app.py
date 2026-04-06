@@ -54,78 +54,37 @@ _db_ok = _init_db()
 # RAG / MODEL LOADING
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Use /tmp on Streamlit Cloud (source dir is read-only); local dev uses repo data dir
-_DATASETS_DIR = Path("/tmp/ddi_datasets")
-_FDA_CSV      = _DATASETS_DIR / "clean_ddi_dataset.csv"
-_DDI_CSV      = _DATASETS_DIR / "fully_processed_dataset.csv"
-_CHROMA_DIR   = Path("/tmp/ddi_chroma")
-
-# GitHub Releases — plain HTTP, no special packages needed
-_GH_RELEASE_BASE = "https://github.com/nagareddygangavarapub/DDI/releases/download/v1.0"
-_RELEASE_FILES   = {
-    "clean_ddi_dataset.csv":       f"{_GH_RELEASE_BASE}/clean_ddi_dataset.csv",
-    "fully_processed_dataset.csv": f"{_GH_RELEASE_BASE}/fully_processed_dataset.csv",
-}
+# Drug names JSON — built once locally by upload_to_qdrant.py, committed to GitHub
+_DRUG_NAMES_JSON = _SRC / "drug_names.json"
 
 
 @st.cache_resource(show_spinner="Loading DrugSafe AI models…")
 def _load_system():
-    import requests
-    from config import COLLECTION_NAME
-    from data_preprocessing import load_and_clean_data
-    from drug_categorization import apply_product_type, apply_route_column
-    from rag_pipeline import build_chunk_df, build_chroma_index, load_models
-    import chromadb
+    import json
+    from rag_pipeline import load_models
 
-    # ── Download datasets from GitHub Releases ────────────────────────────────
-    _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
-    for filename, url in _RELEASE_FILES.items():
-        dest = _DATASETS_DIR / filename
-        if not dest.exists():
-            print(f"[DrugSafe] Downloading {filename} from GitHub Releases…")
-            try:
-                with requests.get(url, stream=True, timeout=600,
-                                  allow_redirects=True) as r:
-                    r.raise_for_status()
-                    with open(dest, "wb") as f:
-                        for chunk in r.iter_content(chunk_size=1024 * 1024):
-                            f.write(chunk)
-                print(f"[DrugSafe] Saved {filename} → {dest} ({dest.stat().st_size:,} bytes)")
-            except Exception as e:
-                st.error(f"❌ Failed to download {filename}: {e}")
-                raise
+    # ── Load drug name lookup from JSON (no CSV needed) ───────────────────────
+    if not _DRUG_NAMES_JSON.exists():
+        st.error("❌ drug_names.json not found. Run ddi_rag/upload_to_qdrant.py locally first.")
+        st.stop()
 
-    DATA_CSV   = str(_FDA_CSV)
-    CHROMA_DIR = str(_CHROMA_DIR)
+    with open(_DRUG_NAMES_JSON, encoding="utf-8") as f:
+        lookup = json.load(f)
 
-    df       = load_and_clean_data(DATA_CSV)
-    df       = apply_route_column(df)
-    df       = apply_product_type(df)
-    chunk_df = build_chunk_df(df)
+    b2g      = lookup.get("brand_to_generic", {})
+    generics = set(lookup.get("generic_names", []))
 
-    _CHROMA_DIR.mkdir(parents=True, exist_ok=True)
-    client   = chromadb.PersistentClient(path=CHROMA_DIR)
-    existing = [c.name for c in client.list_collections()]
-    load_models()
-    if COLLECTION_NAME not in existing:
-        build_chroma_index(chunk_df, rebuild=False)
-
-    b2g: Dict[str, str] = {}
-    for _, row in chunk_df[["brand_name", "generic_name"]].drop_duplicates().iterrows():
-        b = str(row["brand_name"]).strip().lower()
-        g = str(row["generic_name"]).strip().lower()
-        if b and b != "nan":
-            b2g[b] = g
-
-    generics     = set(chunk_df["generic_name"].str.lower().str.strip().dropna().unique())
     all_names    = generics | set(b2g.keys())
     sorted_names = sorted(all_names, key=len, reverse=True)
     patterns     = {n: re.compile(r"\b" + re.escape(n) + r"\b") for n in sorted_names}
 
-    return chunk_df, b2g, sorted_names, patterns
+    # ── Load embedding model (connects to Qdrant lazily on first query) ───────
+    load_models()
+
+    return b2g, sorted_names, patterns
 
 
-chunk_df, _B2G, _SORTED, _PATTERNS = _load_system()
+_B2G, _SORTED, _PATTERNS = _load_system()
 
 from rag_pipeline import answer_ddi, answer_general
 from pharmacy_search import find_pharmacies

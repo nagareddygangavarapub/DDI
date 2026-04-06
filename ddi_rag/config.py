@@ -12,7 +12,11 @@ load_dotenv()
 DATA_CSV   = os.getenv("DDI_DATA_CSV",   "../data/datasets/clean_ddi_dataset.csv")
 CHROMA_DIR = os.getenv("DDI_CHROMA_DIR", "./chroma_ddi_db")
 
-# ── ChromaDB ──────────────────────────────────────────────────────────────────
+# ── Qdrant Cloud (vector database) ───────────────────────────────────────────
+QDRANT_URL     = os.getenv("QDRANT_URL",     "https://a08adb54-966d-40be-9a94-d573cef3e142.us-east-1-1.aws.cloud.qdrant.io:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+
+# ── ChromaDB (local fallback) ─────────────────────────────────────────────────
 COLLECTION_NAME  = "fda_drug_labels"
 EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
 CHUNK_SIZE       = 120   # words per chunk
