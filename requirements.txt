@@ -11,9 +11,8 @@ torch
 # LLM generation (Groq API)
 requests
 
-# HuggingFace Hub (dataset download — hf_xet needed for XET-backed files)
-huggingface_hub[hf_xet]
-hf_xet
+# HuggingFace Hub
+huggingface_hub
 
 # Flask API
 flask

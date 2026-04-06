@@ -60,40 +60,40 @@ _FDA_CSV      = _DATASETS_DIR / "clean_ddi_dataset.csv"
 _DDI_CSV      = _DATASETS_DIR / "fully_processed_dataset.csv"
 _CHROMA_DIR   = Path("/tmp/ddi_chroma")
 
-_HF_REPO    = "wolfrum/ddi-data"
-_HF_FILES   = [
-    "clean_ddi_dataset.csv",
-    "fully_processed_dataset.csv",
-]
+# GitHub Releases — plain HTTP, no special packages needed
+_GH_RELEASE_BASE = "https://github.com/nagareddygangavarapub/DDI/releases/download/v1.0"
+_RELEASE_FILES   = {
+    "clean_ddi_dataset.csv":       f"{_GH_RELEASE_BASE}/clean_ddi_dataset.csv",
+    "fully_processed_dataset.csv": f"{_GH_RELEASE_BASE}/fully_processed_dataset.csv",
+}
 
 
 @st.cache_resource(show_spinner="Loading DrugSafe AI models…")
 def _load_system():
-    from huggingface_hub import hf_hub_download
+    import requests
     from config import COLLECTION_NAME
     from data_preprocessing import load_and_clean_data
     from drug_categorization import apply_product_type, apply_route_column
     from rag_pipeline import build_chunk_df, build_chroma_index, load_models
     import chromadb
 
-    # ── Download datasets from Hugging Face ──────────────────────────────────
+    # ── Download datasets from GitHub Releases ────────────────────────────────
     _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
-    missing = [f for f in _HF_FILES if not (_DATASETS_DIR / f).exists()]
-    if missing:
-        print(f"[DrugSafe] Downloading {missing} from HuggingFace ({_HF_REPO})…")
-        try:
-            from huggingface_hub import snapshot_download
-            snapshot_download(
-                repo_id        = _HF_REPO,
-                repo_type      = "dataset",
-                local_dir      = str(_DATASETS_DIR),
-                allow_patterns = _HF_FILES,
-                ignore_patterns= ["*.gitattributes", ".gitattributes"],
-            )
-            print(f"[DrugSafe] Download complete → {_DATASETS_DIR}")
-        except Exception as e:
-            st.error(f"❌ Failed to download datasets from HuggingFace: {e}")
-            raise
+    for filename, url in _RELEASE_FILES.items():
+        dest = _DATASETS_DIR / filename
+        if not dest.exists():
+            print(f"[DrugSafe] Downloading {filename} from GitHub Releases…")
+            try:
+                with requests.get(url, stream=True, timeout=600,
+                                  allow_redirects=True) as r:
+                    r.raise_for_status()
+                    with open(dest, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=1024 * 1024):
+                            f.write(chunk)
+                print(f"[DrugSafe] Saved {filename} → {dest} ({dest.stat().st_size:,} bytes)")
+            except Exception as e:
+                st.error(f"❌ Failed to download {filename}: {e}")
+                raise
 
     DATA_CSV   = str(_FDA_CSV)
     CHROMA_DIR = str(_CHROMA_DIR)
