@@ -60,36 +60,38 @@ _FDA_CSV      = _DATASETS_DIR / "clean_ddi_dataset.csv"
 _DDI_CSV      = _DATASETS_DIR / "fully_processed_dataset.csv"
 _CHROMA_DIR   = Path("/tmp/ddi_chroma")
 
-_HF_FILES = {
-    "clean_ddi_dataset.csv":       "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/clean_ddi_dataset.csv",
-    "fully_processed_dataset.csv": "https://huggingface.co/datasets/wolfrum/ddi-data/resolve/main/fully_processed_dataset.csv",
-}
+_HF_REPO    = "wolfrum/ddi-data"
+_HF_FILES   = [
+    "clean_ddi_dataset.csv",
+    "fully_processed_dataset.csv",
+]
 
 
 @st.cache_resource(show_spinner="Loading DrugSafe AI models…")
 def _load_system():
-    import requests
+    from huggingface_hub import hf_hub_download
     from config import COLLECTION_NAME
     from data_preprocessing import load_and_clean_data
     from drug_categorization import apply_product_type, apply_route_column
     from rag_pipeline import build_chunk_df, build_chroma_index, load_models
     import chromadb
 
-    # ── Download datasets from Hugging Face if not present ────────────────────
+    # ── Download datasets from Hugging Face using hf_hub_download ────────────
     _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
-    for filename, url in _HF_FILES.items():
+    for filename in _HF_FILES:
         dest = _DATASETS_DIR / filename
         if not dest.exists():
-            print(f"[DrugSafe] Downloading {filename} from Hugging Face…")
+            print(f"[DrugSafe] Downloading {filename} from HuggingFace ({_HF_REPO})…")
             try:
-                resp = requests.get(url, stream=True, timeout=600)
-                resp.raise_for_status()
-                with open(dest, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=65536):
-                        f.write(chunk)
-                print(f"[DrugSafe] Downloaded {filename} → {dest}")
+                downloaded = hf_hub_download(
+                    repo_id   = _HF_REPO,
+                    filename  = filename,
+                    repo_type = "dataset",
+                    local_dir = str(_DATASETS_DIR),
+                )
+                print(f"[DrugSafe] Saved → {downloaded}")
             except Exception as e:
-                st.error(f"Failed to download {filename}: {e}\nURL: {url}")
+                st.error(f"❌ Failed to download {filename} from HuggingFace: {e}")
                 raise
 
     DATA_CSV   = str(_FDA_CSV)
