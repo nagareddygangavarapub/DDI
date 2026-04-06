@@ -66,31 +66,31 @@ _HF_FILES = {
 }
 
 
-def _download_data():
-    """Download datasets from Hugging Face into /tmp if not already present."""
-    import requests
-    _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
-    for filename, url in _HF_FILES.items():
-        dest = _DATASETS_DIR / filename
-        if not dest.exists():
-            with st.spinner(f"Downloading {filename} from Hugging Face…"):
-                resp = requests.get(url, stream=True, timeout=600)
-                resp.raise_for_status()
-                with open(dest, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=65536):
-                        f.write(chunk)
-
-
-_download_data()
-
-
 @st.cache_resource(show_spinner="Loading DrugSafe AI models…")
 def _load_system():
+    import requests
     from config import COLLECTION_NAME
     from data_preprocessing import load_and_clean_data
     from drug_categorization import apply_product_type, apply_route_column
     from rag_pipeline import build_chunk_df, build_chroma_index, load_models
     import chromadb
+
+    # ── Download datasets from Hugging Face if not present ────────────────────
+    _DATASETS_DIR.mkdir(parents=True, exist_ok=True)
+    for filename, url in _HF_FILES.items():
+        dest = _DATASETS_DIR / filename
+        if not dest.exists():
+            print(f"[DrugSafe] Downloading {filename} from Hugging Face…")
+            try:
+                resp = requests.get(url, stream=True, timeout=600)
+                resp.raise_for_status()
+                with open(dest, "wb") as f:
+                    for chunk in resp.iter_content(chunk_size=65536):
+                        f.write(chunk)
+                print(f"[DrugSafe] Downloaded {filename} → {dest}")
+            except Exception as e:
+                st.error(f"Failed to download {filename}: {e}\nURL: {url}")
+                raise
 
     DATA_CSV   = str(_FDA_CSV)
     CHROMA_DIR = str(_CHROMA_DIR)
