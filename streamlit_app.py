@@ -127,8 +127,26 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-1) !important;
   letter-spacing: -0.01em !important;
 }
-p, li, span, label, caption {
+p, li, label {
   font-family: 'DM Sans', system-ui, sans-serif !important;
+}
+/* Preserve Material Icons ligatures — never override icon spans */
+[class*="material-icons"],
+[class*="material-symbols"] {
+  font-family: 'Material Icons', 'Material Icons Round', 'Material Icons Outlined' !important;
+}
+/* Hide raw icon-name text on sidebar toggle; keep only the SVG arrow */
+[data-testid="stSidebarCollapseButton"] button span:not([data-testid]),
+[data-testid="collapsedControl"]        button span:not([data-testid]) {
+  font-size: 0 !important;
+  line-height: 0 !important;
+}
+/* Fix expander arrow icon-name text: only target the icon span (not the label) */
+[data-testid="stExpanderToggleIcon"] span {
+  font-size: 0 !important;
+  overflow: hidden !important;
+  display: inline-block !important;
+  width: 0 !important;
 }
 
 /* ═══════════════════════════════════════════
