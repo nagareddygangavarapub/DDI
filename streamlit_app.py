@@ -35,6 +35,541 @@ st.set_page_config(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# FONT + CSS INJECTION
+# ══════════════════════════════════════════════════════════════════════════════
+
+st.markdown(
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&'
+    'family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&'
+    'family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">',
+    unsafe_allow_html=True,
+)
+
+st.markdown("""
+<style>
+/* ═══════════════════════════════════════════
+   CSS VARIABLES
+═══════════════════════════════════════════ */
+:root {
+  --bg:            #F7F5F0;
+  --bg-2:          #EFECE5;
+  --bg-3:          #E6E2D9;
+  --surface:       #FFFFFF;
+  --border:        #E0DCD3;
+  --border-strong: #C8C3B8;
+  --text-1:        #1A1714;
+  --text-2:        #6B6560;
+  --text-3:        #A09A94;
+  --teal:          #0B7B6E;
+  --teal-mid:      #0FA898;
+  --teal-light:    #E3F7F4;
+  --teal-border:   rgba(11,123,110,0.22);
+  --amber:         #B45309;
+  --amber-light:   #FEF9EC;
+  --amber-border:  #F5D07A;
+  --r-xs:          6px;
+  --r-sm:          10px;
+  --r:             16px;
+  --r-lg:          22px;
+  --sh-sm:         0 1px 4px rgba(26,23,20,0.07);
+  --sh:            0 3px 14px rgba(26,23,20,0.08);
+  --sh-lg:         0 10px 40px rgba(26,23,20,0.11);
+}
+
+/* ═══════════════════════════════════════════
+   GLOBAL RESET
+═══════════════════════════════════════════ */
+html, body, [data-testid="stApp"],
+[data-testid="stAppViewContainer"] {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+  background-color: var(--bg) !important;
+  color: var(--text-1) !important;
+}
+
+/* Dot-grid texture on the outer canvas */
+[data-testid="stAppViewContainer"] {
+  background-image:
+    radial-gradient(circle, #C8C3B8 1px, transparent 1px) !important;
+  background-size: 26px 26px !important;
+  background-color: var(--bg) !important;
+}
+
+/* Main content column — white card floating over the grid */
+.main .block-container {
+  background: var(--surface) !important;
+  max-width: 880px !important;
+  padding: 0 2.25rem 5rem !important;
+  margin: 0 auto !important;
+  box-shadow: var(--sh-lg) !important;
+  border-left:  1px solid var(--border) !important;
+  border-right: 1px solid var(--border) !important;
+  min-height: 100vh !important;
+}
+
+/* ═══════════════════════════════════════════
+   HIDE CHROME JUNK
+═══════════════════════════════════════════ */
+#MainMenu, footer, [data-testid="stDecoration"] {
+  visibility: hidden !important;
+}
+[data-testid="stHeader"] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+/* ═══════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  color: var(--text-1) !important;
+  letter-spacing: -0.01em !important;
+}
+p, li, span, label, caption {
+  font-family: 'DM Sans', system-ui, sans-serif !important;
+}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+[data-testid="stSidebar"] {
+  background: var(--bg-2) !important;
+  border-right: 1px solid var(--border) !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+  padding-top: 1.75rem !important;
+}
+[data-testid="stSidebar"] * {
+  color: var(--text-1) !important;
+}
+[data-testid="stSidebar"] hr {
+  border-color: var(--border) !important;
+}
+[data-testid="stSidebar"] .stMarkdown small {
+  color: var(--text-3) !important;
+  font-size: 0.72rem !important;
+}
+
+/* Sidebar toggle */
+[data-testid="stSidebarCollapseButton"] button,
+[data-testid="collapsedControl"] button {
+  background-color: var(--teal) !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+  border: none !important;
+  box-shadow: var(--sh) !important;
+}
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════ */
+div[data-testid="stButton"] > button {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+  color: var(--text-2) !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: 99px !important;
+  padding: 0.32rem 0.95rem !important;
+  transition: border-color 0.14s, color 0.14s, background 0.14s !important;
+  box-shadow: var(--sh-sm) !important;
+}
+div[data-testid="stButton"] > button:hover {
+  border-color: var(--teal) !important;
+  color: var(--teal) !important;
+  background: var(--teal-light) !important;
+}
+div[data-testid="stButton"] > button:active {
+  transform: scale(0.98) !important;
+}
+
+/* Form submit — filled teal */
+div[data-testid="stFormSubmitButton"] > button {
+  background: var(--teal) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--r-sm) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(11,123,110,0.28) !important;
+}
+div[data-testid="stFormSubmitButton"] > button:hover {
+  background: var(--teal-mid) !important;
+  color: #fff !important;
+}
+
+/* ═══════════════════════════════════════════
+   INPUTS
+═══════════════════════════════════════════ */
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input {
+  font-family: 'DM Sans', sans-serif !important;
+  background: var(--surface) !important;
+  color: var(--text-1) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--r-xs) !important;
+  font-size: 0.88rem !important;
+}
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus {
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 0 3px rgba(11,123,110,0.12) !important;
+  outline: none !important;
+}
+[data-testid="stTextInput"] label,
+[data-testid="stNumberInput"] label {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  color: var(--text-2) !important;
+}
+
+/* ═══════════════════════════════════════════
+   CHAT
+═══════════════════════════════════════════ */
+[data-testid="stChatInput"] {
+  background: var(--surface) !important;
+  border-top: 1px solid var(--border) !important;
+}
+[data-testid="stChatInput"] textarea {
+  font-family: 'DM Sans', sans-serif !important;
+  background: var(--bg-2) !important;
+  color: var(--text-1) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--r) !important;
+  font-size: 0.93rem !important;
+  line-height: 1.6 !important;
+}
+[data-testid="stChatInput"] textarea:focus {
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 0 3px rgba(11,123,110,0.10) !important;
+  outline: none !important;
+}
+[data-testid="stChatMessage"] {
+  background: transparent !important;
+  padding: 0.2rem 0 !important;
+  border: none !important;
+}
+[data-testid="stChatMessage"] p,
+[data-testid="stChatMessage"] li {
+  font-family: 'DM Sans', sans-serif !important;
+  color: var(--text-1) !important;
+  font-size: 0.93rem !important;
+  line-height: 1.72 !important;
+}
+
+/* ═══════════════════════════════════════════
+   EXPANDERS
+═══════════════════════════════════════════ */
+[data-testid="stExpander"] {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-sm) !important;
+  background: var(--bg-2) !important;
+  box-shadow: none !important;
+}
+[data-testid="stExpander"] summary {
+  font-size: 0.83rem !important;
+  font-weight: 500 !important;
+  color: var(--text-2) !important;
+}
+
+/* ═══════════════════════════════════════════
+   ALERTS
+═══════════════════════════════════════════ */
+[data-testid="stAlert"] {
+  border-radius: var(--r-sm) !important;
+  font-size: 0.86rem !important;
+}
+
+/* ═══════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════ */
+.stProgress > div > div > div {
+  background: var(--teal) !important;
+  border-radius: 99px !important;
+}
+.stProgress > div > div {
+  background: var(--bg-3) !important;
+  border-radius: 99px !important;
+}
+
+/* ═══════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════ */
+[data-testid="stTabs"] [data-baseweb="tab"] {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 0.84rem !important;
+  font-weight: 500 !important;
+}
+[data-testid="stTabs"] [aria-selected="true"] {
+  color: var(--teal) !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab-border"] {
+  background: var(--teal) !important;
+}
+
+/* ═══════════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════════ */
+hr {
+  border-color: var(--border) !important;
+  margin: 1.25rem 0 !important;
+}
+
+/* ═══════════════════════════════════════════
+   CAPTION / SMALL TEXT
+═══════════════════════════════════════════ */
+.stCaption, [data-testid="stCaptionContainer"] p {
+  font-size: 0.76rem !important;
+  color: var(--text-3) !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
+
+/* ═══════════════════════════════════════════
+   CUSTOM COMPONENTS
+═══════════════════════════════════════════ */
+
+/* ── Welcome hero ── */
+.welcome-hero {
+  padding: 3.5rem 1rem 2.25rem;
+  text-align: center;
+  position: relative;
+}
+.welcome-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  background: var(--teal-light);
+  border: 1px solid var(--teal-border);
+  border-radius: 99px;
+  padding: 5px 16px;
+  margin-bottom: 1.4rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+.welcome-title {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: 3.4rem !important;
+  font-weight: 700 !important;
+  color: var(--text-1) !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.025em !important;
+  margin: 0 0 0.6rem !important;
+}
+.welcome-title em {
+  font-style: italic !important;
+  color: var(--teal) !important;
+}
+.welcome-sub {
+  font-size: 1.05rem;
+  color: var(--text-2);
+  line-height: 1.65;
+  max-width: 460px;
+  margin: 0 auto 2.25rem;
+  font-weight: 300;
+}
+.welcome-stats {
+  display: inline-flex;
+  gap: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+.stat-cell {
+  padding: 1rem 1.75rem;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+.stat-cell:last-child { border-right: none; }
+.stat-num {
+  display: block;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-label {
+  display: block;
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Drug / AI badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 4px 11px;
+  border-radius: var(--r-xs);
+  margin-bottom: 0.7rem;
+}
+.badge-rag {
+  background: var(--teal-light);
+  color: var(--teal);
+  border: 1px solid var(--teal-border);
+}
+.badge-ai {
+  background: var(--amber-light);
+  color: var(--amber);
+  border: 1px solid rgba(180,83,9,0.2);
+}
+
+/* ── CRAG status micro-pill ── */
+.crag-pill {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.60rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-3);
+  color: var(--text-3);
+  border: 1px solid var(--border-strong);
+  margin-left: 7px;
+  vertical-align: middle;
+  letter-spacing: 0.04em;
+}
+.crag-correct   { background: #E3F7F4; color: #0B7B6E; border-color: rgba(11,123,110,0.2); }
+.crag-ambiguous { background: #FEF9EC; color: #B45309; border-color: rgba(180,83,9,0.2);   }
+.crag-incorrect { background: #FEF2F2; color: #B91C1C; border-color: rgba(185,28,28,0.2);  }
+
+/* ── User chip (sidebar) ── */
+.user-chip {
+  background: var(--teal-light);
+  border: 1px solid var(--teal-border);
+  border-radius: var(--r-sm);
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.user-chip strong { color: var(--teal) !important; font-weight: 600; }
+.user-chip small  { color: var(--text-3) !important; font-size: 0.75rem; }
+
+/* ── Guest notice ── */
+.guest-notice {
+  background: var(--amber-light);
+  border: 1px solid var(--amber-border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.79rem;
+  color: var(--amber);
+  line-height: 1.55;
+}
+
+/* ── Pharmacy card ── */
+.pharm-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1rem 1.15rem;
+  margin: 0.4rem 0;
+  font-size: 0.85rem;
+  line-height: 1.72;
+  box-shadow: var(--sh-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pharm-card:hover {
+  border-color: var(--teal) !important;
+  box-shadow: 0 4px 18px rgba(11,123,110,0.10) !important;
+}
+.pharm-card strong {
+  font-size: 0.9rem;
+  color: var(--text-1);
+  font-weight: 600;
+}
+.pharm-card a {
+  color: var(--teal) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  font-size: 0.82rem !important;
+}
+.pharm-card a:hover { text-decoration: underline !important; }
+
+/* ── Sidebar section label ── */
+.sidebar-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* ── Suggestion chips row ── */
+.chips-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 1.5rem 0 0.6rem;
+  display: block;
+}
+
+/* ── Source entry in expander ── */
+.source-entry {
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.source-entry:last-child { border-bottom: none; }
+.source-entry .src-drug {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--teal);
+}
+.source-entry .src-section {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.70rem;
+  color: var(--text-3);
+  margin-left: 6px;
+}
+.source-entry .src-score {
+  float: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.70rem;
+  color: var(--text-3);
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.source-entry .src-text {
+  color: var(--text-2);
+  font-size: 0.80rem;
+  margin-top: 4px;
+  font-style: italic;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # DATABASE INIT
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -54,16 +589,14 @@ _db_ok = _init_db()
 # RAG / MODEL LOADING
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Drug names JSON — built once locally by upload_to_qdrant.py, committed to GitHub
 _DRUG_NAMES_JSON = _SRC / "drug_names.json"
 
 
-@st.cache_resource(show_spinner="Loading DrugSafe AI models…")
+@st.cache_resource(show_spinner="Initialising DrugSafe AI…")
 def _load_system():
     import json
     from rag_pipeline import load_models
 
-    # ── Load drug name lookup from JSON (no CSV needed) ───────────────────────
     if not _DRUG_NAMES_JSON.exists():
         st.error("❌ drug_names.json not found. Run ddi_rag/upload_to_qdrant.py locally first.")
         st.stop()
@@ -78,9 +611,7 @@ def _load_system():
     sorted_names = sorted(all_names, key=len, reverse=True)
     patterns     = {n: re.compile(r"\b" + re.escape(n) + r"\b") for n in sorted_names}
 
-    # ── Load embedding model (connects to Qdrant lazily on first query) ───────
     load_models()
-
     return b2g, sorted_names, patterns
 
 
@@ -188,110 +719,45 @@ logged_in = bool(st.session_state.user_id)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CSS
-# ══════════════════════════════════════════════════════════════════════════════
-
-st.markdown("""
-<style>
-html, body, [data-testid="stAppViewContainer"],
-[data-testid="stApp"], .main, .block-container {
-    background-color: #ffffff !important; color: #1a1a1a !important;
-}
-/* Only hide the hamburger menu and footer — leave header/toggle untouched */
-#MainMenu { visibility: hidden; }
-footer    { visibility: hidden; }
-.block-container { padding-top: 0.5rem !important; max-width: 820px; }
-
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background: #f7f7f8 !important;
-    border-right: 1px solid #e5e5e5 !important;
-}
-[data-testid="stSidebar"] * { color: #1a1a1a !important; }
-
-/* Style the native sidebar toggle buttons green */
-[data-testid="stSidebarCollapseButton"] button,
-[data-testid="collapsedControl"] button {
-    background-color: #10a37f !important;
-    color: white !important;
-    border-radius: 50% !important;
-}
-
-/* Chat messages */
-[data-testid="stChatMessage"] { background: #ffffff !important; color: #1a1a1a !important; }
-[data-testid="stChatMessage"] p,
-[data-testid="stChatMessage"] li { color: #1a1a1a !important; }
-[data-testid="stChatMessage"][data-role="user"] {
-    background: #f7f7f8 !important; border-radius: 12px; padding: 0.6rem 1rem;
-}
-[data-testid="stChatInput"] textarea {
-    background: #ffffff !important; color: #1a1a1a !important;
-    border: 1px solid #d1d5db !important; border-radius: 12px !important;
-}
-
-/* Badges */
-.badge {
-    display: inline-block; font-size: 0.72rem; font-weight: 700;
-    padding: 3px 14px; border-radius: 99px; letter-spacing: 0.05em; margin-bottom: 0.5rem;
-}
-.badge-rag { background: #10a37f; color: #fff; }
-.badge-ai  { background: #7c3aed; color: #fff; }
-
-/* Cards */
-.user-chip {
-    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
-    padding: 0.6rem 1rem; margin-bottom: 0.5rem; font-size: 0.88rem;
-}
-.guest-notice {
-    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
-    padding: 0.6rem 1rem; margin-bottom: 0.5rem; font-size: 0.82rem; color: #92400e;
-}
-.pharm-card {
-    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
-    padding: 0.65rem 1rem; margin: 0.35rem 0; font-size: 0.88rem; line-height: 1.6;
-}
-.welcome-wrap { text-align: center; padding: 2.5rem 1rem 1.5rem; }
-.welcome-wrap h1 { font-size: 2.2rem; color: #1a1a1a; }
-.welcome-wrap p  { color: #6b7280; max-width: 520px; margin: auto; }
-div[data-testid="stButton"] button {
-    border-radius: 20px !important; font-size: 0.85rem !important;
-    color: #1a1a1a !important; background: #f7f7f8 !important;
-    border: 1px solid #e5e5e5 !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ══════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("## 💊 DrugSafe AI")
-    st.caption("FDA · 745K vectors · Groq LLaMA")
+    st.markdown(
+        '<div style="font-family:\'Playfair Display\',serif;font-size:1.25rem;'
+        'font-weight:700;color:#1A1714;letter-spacing:-0.01em;margin-bottom:2px;">'
+        'DrugSafe <em style="color:#0B7B6E;font-style:italic;">AI</em></div>'
+        '<div style="font-family:\'JetBrains Mono\',monospace;font-size:0.62rem;'
+        'color:#A09A94;letter-spacing:0.09em;text-transform:uppercase;margin-bottom:0.5rem;">'
+        'FDA · CRAG · Qdrant · LLaMA</div>',
+        unsafe_allow_html=True,
+    )
     st.divider()
 
     # ── Auth section ──────────────────────────────────────────────────────────
     if logged_in:
         st.markdown(
-            f'<div class="user-chip">👤 <strong>{st.session_state.user_name}</strong>'
-            f'<br><small>{st.session_state.user_email}</small></div>',
+            f'<div class="user-chip">'
+            f'<strong>{st.session_state.user_name}</strong>'
+            f'<br><small>{st.session_state.user_email}</small>'
+            f'</div>',
             unsafe_allow_html=True,
         )
         col1, col2 = st.columns(2)
         if col1.button("＋ New Chat", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
-        if col2.button("Logout", use_container_width=True):
+        if col2.button("Sign Out", use_container_width=True):
             st.session_state.update({"user_id": None, "user_name": None,
                                      "user_email": None, "messages": []})
             st.rerun()
 
     else:
-        # Guest — show login/register inline
         st.markdown(
-            '<div class="guest-notice">🔓 You\'re browsing as a <strong>guest</strong>.'
-            ' Sign in to save history &amp; medications.</div>',
+            '<div class="guest-notice">'
+            '🔓 Browsing as <strong>guest</strong>. '
+            'Sign in to save history &amp; medications.'
+            '</div>',
             unsafe_allow_html=True,
         )
         if st.button("＋ New Chat", use_container_width=True):
@@ -312,8 +778,8 @@ with st.sidebar:
                         st.error(err)
                     else:
                         st.session_state.update({
-                            "user_id": user["id"],
-                            "user_name": user["full_name"],
+                            "user_id":    user["id"],
+                            "user_name":  user["full_name"],
                             "user_email": user["email"],
                         })
                         st.rerun()
@@ -336,17 +802,18 @@ with st.sidebar:
                             st.error(err)
                         else:
                             st.session_state.update({
-                                "user_id": user["id"],
-                                "user_name": user["full_name"],
+                                "user_id":    user["id"],
+                                "user_name":  user["full_name"],
                                 "user_email": user["email"],
                             })
                             st.rerun()
 
     st.divider()
 
-    # ── Query History (only for logged-in users) ───────────────────────────────
+    # ── Query History ─────────────────────────────────────────────────────────
     if logged_in:
-        st.caption("📋  MY HISTORY")
+        st.markdown('<span class="sidebar-label">Recent Queries</span>',
+                    unsafe_allow_html=True)
         try:
             history_rows = _get_history(st.session_state.user_id, limit=15)
             if history_rows:
@@ -365,12 +832,12 @@ with st.sidebar:
                         st.rerun()
             else:
                 st.caption("No history yet — start chatting!")
-        except Exception as e:
-            st.caption(f"History unavailable.")
+        except Exception:
+            st.caption("History unavailable.")
 
         st.divider()
 
-        # ── Medications (only for logged-in users) ─────────────────────────────
+        # ── Medications ───────────────────────────────────────────────────────
         with st.expander("💊 My Medications", expanded=True):
             try:
                 db_meds = _get_medications(st.session_state.user_id)
@@ -380,9 +847,9 @@ with st.sidebar:
             with st.form("add_med", clear_on_submit=True):
                 nd = st.text_input("Drug name *", placeholder="e.g. Metformin")
                 c1, c2 = st.columns(2)
-                dos = c1.text_input("Dosage",    placeholder="500mg")
+                dos = c1.text_input("Dosage",    placeholder="500 mg")
                 frq = c2.text_input("Frequency", placeholder="twice daily")
-                if st.form_submit_button("Add", use_container_width=True):
+                if st.form_submit_button("Add Medication", use_container_width=True):
                     if nd.strip():
                         _add_medication(st.session_state.user_id, nd, dos, frq)
                         st.rerun()
@@ -393,8 +860,10 @@ with st.sidebar:
                 name = med["drug_name"]
                 info = " · ".join(filter(None, [med.get("dosage"), med.get("frequency")]))
                 mc1, mc2 = st.columns([5, 1])
-                mc1.markdown(f"**{name}**" + (f"  \n<small>{info}</small>" if info else ""),
-                             unsafe_allow_html=True)
+                mc1.markdown(
+                    f"**{name}**" + (f"  \n<small style='color:#A09A94'>{info}</small>" if info else ""),
+                    unsafe_allow_html=True,
+                )
                 if mc2.button("✕", key=f"d_{med['id']}"):
                     _delete_medication(med["id"])
                     st.rerun()
@@ -403,31 +872,31 @@ with st.sidebar:
                 st.caption("No medications saved yet.")
 
 
-
 # ══════════════════════════════════════════════════════════════════════════════
-# LOCATION BAR — auto-detect or manual, shown at top of main area
+# LOCATION BAR
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _location_bar():
-    """Compact location row at top of main content."""
     has_loc = st.session_state.user_lat is not None
 
     if has_loc:
         lat = st.session_state.user_lat
         lon = st.session_state.user_lon
-        loc_label = f"📍 {lat:.4f}, {lon:.4f}"
-        col1, col2 = st.columns([5, 1])
-        col1.caption(f"{loc_label} — pharmacies will show after drug queries")
+        col1, col2 = st.columns([6, 1])
+        col1.markdown(
+            f'<span style="font-family:\'JetBrains Mono\',monospace;font-size:0.72rem;'
+            f'color:#A09A94;">📍 {lat:.4f}, {lon:.4f} — pharmacies enabled</span>',
+            unsafe_allow_html=True,
+        )
         if col2.button("Change", key="loc_change"):
             st.session_state.user_lat = None
             st.session_state.user_lon = None
             st.rerun()
     else:
-        st.info("📍 **Share your location** to automatically find nearby pharmacies after each drug query.")
+        st.info("📍 **Share your location** to find nearby pharmacies after each drug query.")
         col1, col2, col3 = st.columns([2, 1, 1])
 
-        # Auto-detect via browser
-        if col1.button("🌐 Detect my location automatically", key="loc_auto"):
+        if col1.button("🌐 Detect my location", key="loc_auto"):
             st.session_state["_detect_loc"] = True
             st.rerun()
 
@@ -441,7 +910,6 @@ def _location_bar():
             else:
                 st.caption("⏳ Waiting for browser permission…")
 
-        # Manual fallback
         with st.expander("Or enter manually", expanded=False):
             c1, c2, c3 = st.columns([2, 2, 1])
             mlat = c1.number_input("Latitude",  value=17.3850, format="%.4f", key="m_lat")
@@ -450,6 +918,7 @@ def _location_bar():
                 st.session_state.user_lat = mlat
                 st.session_state.user_lon = mlon
                 st.rerun()
+
 
 _location_bar()
 st.divider()
@@ -460,20 +929,24 @@ st.divider()
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _show_pharmacies(drug_name: str):
-    """Fetch and render nearby pharmacies for a drug inline in the chat."""
     lat = st.session_state.user_lat
     lon = st.session_state.user_lon
     if lat is None or lon is None:
         return
 
-    with st.spinner(f"🏪 Finding pharmacies near you with **{drug_name}**…"):
+    with st.spinner(f"Finding pharmacies near you for **{drug_name}**…"):
         results = find_pharmacies(lat=lat, lon=lon, radius_m=5000, drug_name=drug_name)
 
     if not results:
-        st.warning(f"No pharmacies found within 5 km. Try expanding your search radius.")
+        st.warning(f"No pharmacies found within 5 km for {drug_name}.")
         return
 
-    st.markdown(f"**🏪 Nearby pharmacies where you can get {drug_name.title()}:**")
+    st.markdown(
+        f'<div style="font-family:\'JetBrains Mono\',monospace;font-size:0.68rem;'
+        f'letter-spacing:0.09em;text-transform:uppercase;color:#A09A94;margin-bottom:0.6rem;">'
+        f'Nearby Pharmacies · {drug_name.title()}</div>',
+        unsafe_allow_html=True,
+    )
     cols = st.columns(2)
     for i, p in enumerate(results[:6]):
         name     = p.get("name", "Unknown Pharmacy")
@@ -491,7 +964,7 @@ def _show_pharmacies(drug_name: str):
                 f'🚶 {dist}<br>'
                 f'{"📞 " + phone + "<br>" if phone else ""}'
                 f'{"🕐 " + hours + "<br>" if hours else ""}'
-                f'<a href="{maps_url}" target="_blank">🗺 Map</a> &nbsp; '
+                f'<a href="{maps_url}" target="_blank">🗺 Map</a>&nbsp;&nbsp;'
                 f'<a href="{dir_url}" target="_blank">🧭 Directions</a>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -499,22 +972,34 @@ def _show_pharmacies(drug_name: str):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# MAIN CHAT
+# WELCOME SCREEN
 # ══════════════════════════════════════════════════════════════════════════════
 
 if not st.session_state.messages:
-    greeting = (f"Hello, <strong>{st.session_state.user_name}</strong>! "
-                if logged_in else "")
+    greeting = f"Hello, {st.session_state.user_name}. " if logged_in else ""
     st.markdown(
-        f'<div class="welcome-wrap"><h1>💊 DrugSafe AI</h1>'
-        f'<p>{greeting}Ask about drug interactions, side effects, '
-        f'or any health question — free for everyone.</p></div>',
+        f'<div class="welcome-hero">'
+        f'<div class="welcome-eyebrow">⬡ CRAG &nbsp;·&nbsp; FDA &nbsp;·&nbsp; 745K Vectors</div>'
+        f'<h1 class="welcome-title">Drug<em>Safe</em> AI</h1>'
+        f'<p class="welcome-sub">{greeting}'
+        f'Clinical-grade drug interaction intelligence.<br>'
+        f'Ask about interactions, side effects, or any health question.</p>'
+        f'<div class="welcome-stats">'
+        f'<div class="stat-cell"><span class="stat-num">745K</span><span class="stat-label">FDA Vectors</span></div>'
+        f'<div class="stat-cell"><span class="stat-num">CRAG</span><span class="stat-label">Retrieval</span></div>'
+        f'<div class="stat-cell"><span class="stat-num">LLaMA</span><span class="stat-label">Generation</span></div>'
+        f'</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
+
     if not logged_in:
         st.info("💡 Sign in from the sidebar to save your query history and medications.")
 
-    st.markdown("##### Try asking:")
+    st.markdown(
+        '<span class="chips-label">Try asking</span>',
+        unsafe_allow_html=True,
+    )
     examples = [
         "Is it safe to take ibuprofen with warfarin?",
         "What are the side effects of metformin?",
@@ -530,36 +1015,62 @@ if not st.session_state.messages:
             st.rerun()
 
 
-# ── Render helpers ─────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# RENDER HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _crag_pill_html(status: str) -> str:
+    """Return a colour-coded CRAG status micro-pill."""
+    cls_map = {
+        "correct":              "crag-correct",
+        "ambiguous:broadened":  "crag-ambiguous",
+        "incorrect:rewritten":  "crag-incorrect",
+        "incorrect:no_evidence":"crag-incorrect",
+    }
+    cls = cls_map.get(status, "")
+    label = status.replace(":", " · ")
+    return f'<span class="crag-pill {cls}">{label}</span>'
+
 
 def _render_results(results: list):
     for i, item in enumerate(results):
-        mode    = item.get("mode", "rag")
-        drug    = item.get("drug", "")
-        answer  = item.get("answer", "")
-        sources = item.get("sources", [])
+        mode        = item.get("mode", "rag")
+        drug        = item.get("drug", "")
+        answer      = item.get("answer", "")
+        sources     = item.get("sources", [])
+        crag_status = item.get("crag_status", "")
 
         badge_cls = "badge-ai" if mode == "general" else "badge-rag"
         badge_lbl = "AI Assistant" if mode == "general" else drug.upper()
 
-        st.markdown(f'<span class="badge {badge_cls}">{badge_lbl}</span>',
-                    unsafe_allow_html=True)
+        header_html = f'<span class="badge {badge_cls}">{badge_lbl}</span>'
+        if crag_status and mode != "general":
+            header_html += _crag_pill_html(crag_status)
+
+        st.markdown(header_html, unsafe_allow_html=True)
         st.markdown(answer)
 
         if sources:
             with st.expander(f"📚 {len(sources)} FDA source(s)", expanded=False):
                 for src in sources[:4]:
-                    st.caption(
-                        f"**{src.get('generic_name','')}** · "
-                        f"{src.get('section','')} · score {src.get('score',0):.3f}"
+                    score_val = src.get("score", 0)
+                    st.markdown(
+                        f'<div class="source-entry">'
+                        f'<span class="src-drug">{src.get("generic_name","")}</span>'
+                        f'<span class="src-section">{src.get("section","").replace("_"," ")}</span>'
+                        f'<span class="src-score">{score_val:.3f}</span>'
+                        f'<div class="src-text">{src.get("text","")[:280]}…</div>'
+                        f'</div>',
+                        unsafe_allow_html=True,
                     )
-                    st.caption(f"_{src.get('text','')[:300]}…_")
 
         if i < len(results) - 1:
             st.divider()
 
 
-# ── Render chat ────────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# CHAT HISTORY RENDER
+# ══════════════════════════════════════════════════════════════════════════════
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
@@ -574,16 +1085,14 @@ for msg in st.session_state.messages:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CHAT INPUT
+# CHAT INPUT + PROCESSING
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Pick up typed input OR a pending prompt from an example button click
-_typed   = st.chat_input("Ask about drug interactions or health questions…")
+_typed   = st.chat_input("Ask about drug interactions or any health question…")
 _pending = st.session_state.pop("_pending_prompt", None)
 prompt   = _typed or _pending
 
 if prompt:
-
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -620,17 +1129,22 @@ if prompt:
             for drug in detected:
                 with st.status(f"🔍 Searching FDA database for **{drug}**…",
                                expanded=True) as status:
-                    st.write("Retrieving chunks from ChromaDB…")
+                    st.write("Retrieving chunks from Qdrant Cloud…")
                     prog = st.progress(0, text="Embedding query…")
-                    prog.progress(30, text="Running vector search…")
+                    prog.progress(30, text="Running vector search + CRAG grading…")
                     res  = answer_ddi(drug_name=drug, section="drug_interactions",
                                      top_k=5, history_context=history_ctx)
                     prog.progress(80, text="Generating answer via LLaMA…")
                     prog.progress(100, text="Done ✓")
                     status.update(label=f"✅ {drug.upper()} — done",
                                   state="complete", expanded=False)
-                response_data.append({"drug": drug, "answer": res.get("answer", ""),
-                                      "sources": res.get("sources", []), "mode": "rag"})
+                response_data.append({
+                    "drug":        drug,
+                    "answer":      res.get("answer", ""),
+                    "sources":     res.get("sources", []),
+                    "crag_status": res.get("crag_status", ""),
+                    "mode":        "rag",
+                })
         else:
             with st.status("💬 Thinking…", expanded=True) as status:
                 st.write("Calling LLaMA via Groq…")
@@ -638,13 +1152,16 @@ if prompt:
                 res  = answer_general(prompt, history_context=history_ctx)
                 prog.progress(100, text="Done ✓")
                 status.update(label="✅ Response ready", state="complete", expanded=False)
-            response_data.append({"drug": "DrugSafe AI", "answer": res.get("answer", ""),
-                                  "sources": [], "mode": "general"})
+            response_data.append({
+                "drug":    "DrugSafe AI",
+                "answer":  res.get("answer", ""),
+                "sources": [],
+                "mode":    "general",
+            })
 
         placeholder.empty()
         _render_results(response_data)
 
-        # Auto-show nearby pharmacies for each detected drug (if location is set)
         if detected and st.session_state.user_lat is not None:
             st.divider()
             for drug in detected:
@@ -654,7 +1171,6 @@ if prompt:
     st.session_state.messages.append({"role": "assistant", "content": plain,
                                       "data": response_data})
 
-    # Save history only for logged-in users
     if logged_in:
         try:
             _save_history(

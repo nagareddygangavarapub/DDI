@@ -1,15 +1,15 @@
 [theme]
-base = "light"
-primaryColor = "#10a37f"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f7f7f8"
-textColor = "#1a1a1a"
-font = "sans serif"
+base            = "light"
+primaryColor    = "#0B7B6E"
+backgroundColor = "#F7F5F0"
+secondaryBackgroundColor = "#F0EDE6"
+textColor       = "#1A1714"
+font            = "sans serif"
 
 [server]
-port = 8501
-headless = true
-enableCORS = false
+port        = 8501
+headless    = true
+enableCORS  = false
 
 [browser]
 gatherUsageStats = false
