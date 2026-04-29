@@ -165,14 +165,15 @@ def retrieve_chunks(
             [query], convert_to_numpy=True, normalize_embeddings=True
         ).tolist()[0]
 
-        results = client.search(
+        response = client.query_points(
             collection_name = COLLECTION_NAME,
-            query_vector    = query_emb,
+            query           = query_emb,
             query_filter    = query_filter,
             limit           = min(top_k, MAX_TOP_K),
             with_payload    = True,
         )
 
+        results = response.points
         if not results:
             return pd.DataFrame()
 

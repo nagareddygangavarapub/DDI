@@ -1,0 +1,31 @@
+query,target,type,C1_hit,C1_rr,C1_peak,C1_n_hits,C1_latency_s,C2_hit,C2_rr,C2_peak,C2_n_hits,C2_latency_s,C3_hit,C3_rr,C3_peak,C3_n_hits,C3_latency_s,C4_hit,C4_rr,C4_peak,C4_n_hits,C4_latency_s
+Advil interaction with blood thinners,ibuprofen,brand_ddi,1,1.0,0.5747,5,0.86,1,1.0,0.4766,5,0.23,1,1.0,0.5747,5,0.21,1,1.0,0.5747,5,0.18
+Tylenol overdose liver damage risk,acetaminophen,brand_ddi,1,1.0,0.681,5,0.09,1,1.0,0.5,3,0.17,1,1.0,0.681,5,0.19,1,1.0,0.681,5,0.18
+Lipitor muscle pain rhabdomyolysis,atorvastatin,brand_ddi,1,1.0,0.6163,5,0.13,1,1.0,0.6904,5,0.12,1,1.0,0.6904,5,0.09,1,1.0,0.6904,5,0.09
+Glucophage kidney problems lactic acidosis,metformin,brand_ddi,1,1.0,0.6913,5,0.1,1,1.0,0.6913,5,0.1,1,1.0,0.6913,5,0.1,1,1.0,0.6913,5,0.14
+Zithromax heart rhythm QT prolongation,azithromycin,brand_ddi,1,1.0,0.6867,5,0.08,1,1.0,0.6989,5,0.11,1,1.0,0.6989,5,0.14,1,1.0,0.6989,5,0.08
+Motrin and aspirin concurrent use,ibuprofen,brand_ddi,1,1.0,0.5704,5,0.07,1,1.0,0.4614,5,0.2,1,1.0,0.5704,5,0.21,1,1.0,0.5704,5,0.24
+Zoloft and MAOIs serotonin syndrome,sertraline,brand_ddi,1,1.0,0.7563,5,0.1,1,1.0,0.6992,5,0.22,1,1.0,0.6992,5,0.1,1,1.0,0.6992,5,0.09
+Prilosec drug interactions CYP2C19,omeprazole,brand_ddi,1,1.0,0.6768,5,0.17,1,1.0,0.4206,1,0.16,1,1.0,0.696,5,0.22,1,1.0,0.696,5,0.21
+Norvasc amlodipine grapefruit interaction,amlodipine,brand_ddi,1,1.0,0.6769,5,0.11,1,1.0,0.6229,5,0.11,1,1.0,0.6769,5,0.61,1,1.0,0.6769,5,0.21
+Xanax and alcohol CNS depression,alprazolam,brand_ddi,1,1.0,0.7497,5,0.16,1,1.0,0.7616,5,0.1,1,1.0,0.7616,5,0.11,1,1.0,0.7616,5,0.16
+ibuprofen and warfarin bleeding risk increase,ibuprofen,generic_ddi,1,1.0,0.7918,5,0.09,1,1.0,0.6376,5,0.11,1,1.0,0.7918,5,0.3,1,1.0,0.7918,5,0.31
+metformin lactic acidosis contraindications,metformin,generic_ddi,1,1.0,0.8851,5,0.13,1,1.0,0.8811,5,0.12,1,1.0,0.8811,5,0.1,1,1.0,0.8811,5,0.1
+amoxicillin penicillin cross-reactivity allergy,amoxicillin,generic_ddi,1,1.0,0.7144,5,0.15,1,1.0,0.7144,5,0.1,1,1.0,0.7144,5,0.13,1,1.0,0.7144,5,0.12
+lisinopril ACE inhibitor hyperkalemia risk,lisinopril,generic_ddi,1,1.0,0.7086,5,0.12,1,1.0,0.7142,5,0.1,1,1.0,0.7142,5,0.12,1,1.0,0.7142,5,0.09
+sertraline SSRI drug interactions MAO inhibitor,sertraline,generic_ddi,1,1.0,0.7948,5,0.08,1,1.0,0.7908,5,0.12,1,1.0,0.7908,5,0.11,1,1.0,0.7908,5,0.13
+atorvastatin CYP3A4 inhibitor statin interactions,atorvastatin,generic_ddi,1,1.0,0.7847,5,0.24,1,1.0,0.6561,5,0.12,1,1.0,0.6561,5,0.12,1,1.0,0.6561,5,0.09
+warfarin INR monitoring drug food interactions,warfarin,generic_ddi,1,1.0,0.707,5,0.09,1,1.0,0.707,5,0.16,1,1.0,0.707,5,0.09,1,1.0,0.707,5,0.1
+azithromycin QT prolongation cardiac arrhythmia,azithromycin,generic_ddi,1,1.0,0.7836,5,0.12,1,1.0,0.733,5,0.07,1,1.0,0.733,5,0.12,1,1.0,0.733,5,0.1
+omeprazole proton pump inhibitor clopidogrel interaction,omeprazole,generic_ddi,1,1.0,0.7871,5,0.09,1,1.0,0.4154,1,0.11,1,1.0,0.751,5,0.17,1,1.0,0.751,5,0.19
+alprazolam benzodiazepine CNS depressant opioid combination,alprazolam,generic_ddi,1,1.0,0.771,5,0.15,1,1.0,0.7708,5,0.1,1,1.0,0.7708,5,0.11,1,1.0,0.7708,5,0.1
+can I take my blood thinner with over the counter pain medicine,warfarin,colloquial,1,1.0,0.5142,5,0.11,1,1.0,0.4824,5,0.09,1,1.0,0.5142,5,0.31,1,1.0,0.5142,5,0.22
+my cholesterol pill is causing muscle aches what should I do,atorvastatin,colloquial,1,1.0,0.5322,5,0.08,0,0.0,0.3825,0,0.15,0,0.0,0.3825,0,0.14,1,1.0,0.5838,5,0.58
+is it okay to drink alcohol while on antibiotics,amoxicillin,colloquial,1,1.0,0.4875,5,0.09,1,1.0,0.4513,5,0.1,1,1.0,0.4875,5,0.26,1,1.0,0.4875,5,0.25
+my stomach acid medication and my heart pill dont mix,omeprazole,colloquial,1,1.0,0.5833,5,0.16,1,1.0,0.5833,2,0.11,1,1.0,0.5833,4,0.19,1,1.0,0.5833,4,0.21
+blood pressure medicine making me dizzy in the morning,lisinopril,colloquial,1,1.0,0.6236,5,0.09,1,1.0,0.6136,5,0.12,1,1.0,0.6236,5,0.32,1,1.0,0.6236,5,0.42
+CYP3A4 enzyme inhibition drug metabolism interactions,—,mechanism,1,1.0,0.7199,5,0.11,1,1.0,0.7199,5,0.22,1,1.0,0.7199,5,0.14,1,1.0,0.7199,5,0.1
+QT interval prolongation cardiac drugs risk,—,mechanism,1,1.0,0.8063,5,0.13,1,1.0,0.8063,5,0.11,1,1.0,0.8063,5,0.16,1,1.0,0.8063,5,0.1
+serotonin syndrome SSRI SNRI risk factors treatment,—,mechanism,1,1.0,0.7746,5,0.1,1,1.0,0.7746,5,0.1,1,1.0,0.7746,5,0.11,1,1.0,0.7746,5,0.1
+ACE inhibitor angiotensin converting enzyme renal effects,—,mechanism,1,1.0,0.7165,5,0.11,1,1.0,0.7165,5,0.11,1,1.0,0.7165,5,0.1,1,1.0,0.7165,5,0.1
+benzodiazepine CNS depression respiratory side effects,—,mechanism,1,1.0,0.8276,5,0.1,1,1.0,0.8276,5,0.09,1,1.0,0.8276,5,0.17,1,1.0,0.8276,5,0.11
