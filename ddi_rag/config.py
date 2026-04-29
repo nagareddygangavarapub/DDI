@@ -8,13 +8,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Read from st.secrets when running on Streamlit Cloud, else from env
+def _secret(key, default=""):
+    try:
+        import streamlit as st
+        return st.secrets.get(key, os.getenv(key, default))
+    except Exception:
+        return os.getenv(key, default)
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 DATA_CSV   = os.getenv("DDI_DATA_CSV",   "../data/datasets/clean_ddi_dataset.csv")
 CHROMA_DIR = os.getenv("DDI_CHROMA_DIR", "./chroma_ddi_db")
 
 # ── Qdrant Cloud (vector database) ───────────────────────────────────────────
-QDRANT_URL     = os.getenv("QDRANT_URL",     "https://a08adb54-966d-40be-9a94-d573cef3e142.us-east-1-1.aws.cloud.qdrant.io:6333")
-QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+QDRANT_URL     = _secret("QDRANT_URL",     "https://a08adb54-966d-40be-9a94-d573cef3e142.us-east-1-1.aws.cloud.qdrant.io:6333")
+QDRANT_API_KEY = _secret("QDRANT_API_KEY", "")
 
 # ── ChromaDB (local fallback) ─────────────────────────────────────────────────
 COLLECTION_NAME  = "fda_drug_labels"
@@ -29,8 +37,8 @@ HF_MODEL           = os.getenv("HF_MODEL", "mistralai/Mistral-7B-Instruct-v0.3")
 HF_TIMEOUT         = 60
 
 # ── Groq API (primary generation) ─────────────────────────────────────────────
-GROQ_API_KEY       = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL         = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GROQ_API_KEY       = _secret("GROQ_API_KEY", "")
+GROQ_MODEL         = _secret("GROQ_MODEL", "llama-3.1-8b-instant")
 GENERATION_MAX_NEW = 512
 GROQ_TIMEOUT       = 30
 
@@ -41,7 +49,7 @@ _DEFAULT_DB = "sqlite:///" + os.path.join(
 DATABASE_URL = os.getenv("DATABASE_URL", _DEFAULT_DB)
 
 # ── Auth (JWT) ────────────────────────────────────────────────────────────────
-JWT_SECRET_KEY        = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
+JWT_SECRET_KEY        = _secret("JWT_SECRET_KEY", "change-me-in-production")
 JWT_ACCESS_TOKEN_MINS = int(os.getenv("JWT_ACCESS_TOKEN_MINS", 60 * 24))  # 1 day
 
 # ── Redis (optional cache) ────────────────────────────────────────────────────
